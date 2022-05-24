@@ -7,8 +7,10 @@ namespace Database.Models
     {
         public Balance()
         {
-            Credits = new HashSet<Credit>();
-            Transactions = new HashSet<Transaction>();
+            Bills = new HashSet<Bill>();
+            Savings = new HashSet<Saving>();
+            TransactionRecipientBalances = new HashSet<Transaction>();
+            TransactionSenderBalances = new HashSet<Transaction>();
         }
 
         public int Id { get; set; }
@@ -18,7 +20,9 @@ namespace Database.Models
         public DateTime CreatedDate { get; set; }
 
         public virtual User User { get; set; } = null!;
-        public virtual ICollection<Credit> Credits { get; set; }
-        public virtual ICollection<Transaction> Transactions { get; set; }
+        public virtual ICollection<Bill> Bills { get; set; }
+        public virtual ICollection<Saving> Savings { get; set; }
+        public virtual ICollection<Transaction> TransactionRecipientBalances { get; set; }
+        public virtual ICollection<Transaction> TransactionSenderBalances { get; set; }
     }
 }

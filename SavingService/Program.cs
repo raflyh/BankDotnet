@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using SavingService.GraphQL;
 using Database.Models;
+using SavingService.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +23,7 @@ builder.Services
 
 builder.Services.AddControllers();
 
-//builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
+builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
 
 // JWT Tokens
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

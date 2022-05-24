@@ -8,6 +8,7 @@ namespace Database.Models
         public User()
         {
             Balances = new HashSet<Balance>();
+            Credits = new HashSet<Credit>();
             UserRoles = new HashSet<UserRole>();
         }
 
@@ -20,6 +21,7 @@ namespace Database.Models
         public DateTime CreatedDate { get; set; }
 
         public virtual ICollection<Balance> Balances { get; set; }
+        public virtual ICollection<Credit> Credits { get; set; }
         public virtual ICollection<UserRole> UserRoles { get; set; }
     }
 }
