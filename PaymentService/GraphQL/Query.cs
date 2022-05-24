@@ -1,5 +1,6 @@
 ﻿using Database.Models;
 using HotChocolate.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace PaymentService.GraphQL
@@ -13,17 +14,18 @@ namespace PaymentService.GraphQL
 
             var userRole = claimsPrincipal.Claims.Where(o => o.Type == ClaimTypes.Role).FirstOrDefault();
             var user = context.Users.Where(o => o.Username == userName).FirstOrDefault();
+            var userBalance = context.Balances.Where(o => o.UserId == user.Id).FirstOrDefault();
             if (user != null)
             {
                 if (userRole != null)
                 {
-                    if (userRole.Value == "MANAGER")
+                    if (userRole.Value == "MANAGER" || userRole.Value == "CS")
                     {
-                        return context.Bills.AsQueryable();
+                        return context.Bills.Include(o => o.Transactions).AsQueryable();
                     }
                 }
-                var orders = context.Bills.Where(a => a.TransactionId == user.Id);
-                return orders.AsQueryable();
+                var bills = context.Bills.Include(o => o.Transactions).Where(o => o.BalanceId == userBalance.Id);
+                return bills.AsQueryable();
             }
             return new List<Bill>().AsQueryable();
         }
