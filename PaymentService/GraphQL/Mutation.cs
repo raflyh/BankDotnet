@@ -289,7 +289,7 @@ namespace PaymentService.GraphQL
                             BillId = bill.Id,
                             Total = bill.TotalBill,
                             TransactionDate = DateTime.Now,
-                            Description = "Payment for Electric Bill",
+                            Description = "Payment for Water Bill",
                         };
                         context.Transactions.Add(newTransaction);
 
