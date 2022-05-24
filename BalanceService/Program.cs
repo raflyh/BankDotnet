@@ -1,4 +1,5 @@
 using BalanceService.GraphQL;
+using BalanceService.Setting;
 using Database.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -18,9 +19,9 @@ builder.Services
     .AddMutationType<Mutation>()
     .AddAuthorization();
 builder.Services.AddControllers();
-//builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
+builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
 // role-based identity
-/*builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -34,7 +35,7 @@ builder.Services.AddControllers();
         };
 
     });
-builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("KafkaSettings"));*/
+//builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("KafkaSettings"));
 
 var app = builder.Build();
 app.UseAuthentication();

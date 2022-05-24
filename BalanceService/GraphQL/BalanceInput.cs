@@ -3,9 +3,9 @@
     public record BalanceInput
     (
          int? Id,
-         int UserId,
+         int? UserId,
          string AccountNumber,
          double TotalBalance,
-         DateTime CreatedDate
+         DateTime? CreatedDate
      );
 }
