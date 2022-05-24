@@ -7,6 +7,7 @@ namespace Database.Models
     {
         public Credit()
         {
+            Bills = new HashSet<Bill>();
             Transactions = new HashSet<Transaction>();
         }
 
@@ -18,6 +19,7 @@ namespace Database.Models
         public double TotalCredit { get; set; }
 
         public virtual User User { get; set; } = null!;
+        public virtual ICollection<Bill> Bills { get; set; }
         public virtual ICollection<Transaction> Transactions { get; set; }
     }
 }

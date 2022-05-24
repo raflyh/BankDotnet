@@ -5,21 +5,18 @@ namespace Database.Models
 {
     public partial class Transaction
     {
-        public Transaction()
-        {
-            Bills = new HashSet<Bill>();
-        }
-
         public int Id { get; set; }
-        public int CreditId { get; set; }
-        public int BalanceId { get; set; }
+        public int? CreditId { get; set; }
+        public int? SenderBalanceId { get; set; }
+        public int? RecipientBalanceId { get; set; }
+        public int? BillId { get; set; }
         public double Total { get; set; }
         public DateTime TransactionDate { get; set; }
         public string? Description { get; set; }
-        public DateTime CreatedDate { get; set; }
 
-        public virtual Balance Balance { get; set; } = null!;
-        public virtual Credit Credit { get; set; } = null!;
-        public virtual ICollection<Bill> Bills { get; set; }
+        public virtual Bill? Bill { get; set; }
+        public virtual Credit? Credit { get; set; }
+        public virtual Balance? RecipientBalance { get; set; }
+        public virtual Balance? SenderBalance { get; set; }
     }
 }

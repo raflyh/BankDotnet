@@ -63,11 +63,15 @@ namespace Database.Models
 
                 entity.Property(e => e.VirtualAccount).HasMaxLength(50);
 
-                entity.HasOne(d => d.Transaction)
+                entity.HasOne(d => d.Balance)
                     .WithMany(p => p.Bills)
-                    .HasForeignKey(d => d.TransactionId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Bill_Transaction");
+                    .HasForeignKey(d => d.BalanceId)
+                    .HasConstraintName("FK_Bill_Balance");
+
+                entity.HasOne(d => d.Credit)
+                    .WithMany(p => p.Bills)
+                    .HasForeignKey(d => d.CreditId)
+                    .HasConstraintName("FK_Bill_Credit");
             });
 
             modelBuilder.Entity<Credit>(entity =>
@@ -109,23 +113,29 @@ namespace Database.Models
             {
                 entity.ToTable("Transaction");
 
-                entity.Property(e => e.CreatedDate).HasColumnType("datetime");
-
                 entity.Property(e => e.Description).HasMaxLength(50);
 
                 entity.Property(e => e.TransactionDate).HasColumnType("datetime");
 
-                entity.HasOne(d => d.Balance)
+                entity.HasOne(d => d.Bill)
                     .WithMany(p => p.Transactions)
-                    .HasForeignKey(d => d.BalanceId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Transaction_Balance");
+                    .HasForeignKey(d => d.BillId)
+                    .HasConstraintName("FK_Transaction_Bill");
 
                 entity.HasOne(d => d.Credit)
                     .WithMany(p => p.Transactions)
                     .HasForeignKey(d => d.CreditId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Transaction_Credit");
+                    .HasConstraintName("FK_Transaction_Credit1");
+
+                entity.HasOne(d => d.RecipientBalance)
+                    .WithMany(p => p.TransactionRecipientBalances)
+                    .HasForeignKey(d => d.RecipientBalanceId)
+                    .HasConstraintName("FK_Transaction_Balance2");
+
+                entity.HasOne(d => d.SenderBalance)
+                    .WithMany(p => p.TransactionSenderBalances)
+                    .HasForeignKey(d => d.SenderBalanceId)
+                    .HasConstraintName("FK_Transaction_Balance1");
             });
 
             modelBuilder.Entity<User>(entity =>
