@@ -17,10 +17,10 @@ namespace Database.Models
         }
 
         public virtual DbSet<Balance> Balances { get; set; } = null!;
-        public virtual DbSet<Category> Categories { get; set; } = null!;
+        public virtual DbSet<Bill> Bills { get; set; } = null!;
         public virtual DbSet<Credit> Credits { get; set; } = null!;
-        public virtual DbSet<Payment> Payments { get; set; } = null!;
         public virtual DbSet<Role> Roles { get; set; } = null!;
+        public virtual DbSet<Saving> Savings { get; set; } = null!;
         public virtual DbSet<Transaction> Transactions { get; set; } = null!;
         public virtual DbSet<User> Users { get; set; } = null!;
         public virtual DbSet<UserRole> UserRoles { get; set; } = null!;
@@ -30,8 +30,10 @@ namespace Database.Models
             /*if (!optionsBuilder.IsConfigured)
             {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+<<<<<<< HEAD
                 optionsBuilder.UseSqlServer("Server=localhost;Database=BankDotnetDb;uid=sa;pwd=123Farrah#;");
             }*/
+
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -53,13 +55,21 @@ namespace Database.Models
                     .HasConstraintName("FK_UserToBalance");
             });
 
-            modelBuilder.Entity<Category>(entity =>
+            modelBuilder.Entity<Bill>(entity =>
             {
-                entity.ToTable("Category");
+                entity.ToTable("Bill");
 
-                entity.Property(e => e.Name).HasMaxLength(50);
+                entity.Property(e => e.PaymentStatus).HasMaxLength(50);
+
+                entity.Property(e => e.Type).HasMaxLength(50);
 
                 entity.Property(e => e.VirtualAccount).HasMaxLength(50);
+
+                entity.HasOne(d => d.Transaction)
+                    .WithMany(p => p.Bills)
+                    .HasForeignKey(d => d.TransactionId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Bill_Transaction");
             });
 
             modelBuilder.Entity<Credit>(entity =>
@@ -70,28 +80,11 @@ namespace Database.Models
 
                 entity.Property(e => e.DueDate).HasColumnType("datetime");
 
-                entity.HasOne(d => d.Balance)
+                entity.HasOne(d => d.User)
                     .WithMany(p => p.Credits)
-                    .HasForeignKey(d => d.BalanceId)
+                    .HasForeignKey(d => d.UserId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_BalanceToCredit");
-            });
-
-            modelBuilder.Entity<Payment>(entity =>
-            {
-                entity.ToTable("Payment");
-
-                entity.HasOne(d => d.Category)
-                    .WithMany(p => p.Payments)
-                    .HasForeignKey(d => d.CategoryId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_CategoryToPayment");
-
-                entity.HasOne(d => d.Transaction)
-                    .WithMany(p => p.Payments)
-                    .HasForeignKey(d => d.TransactionId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_TransactionToPayment");
+                    .HasConstraintName("FK_Credit_User");
             });
 
             modelBuilder.Entity<Role>(entity =>
@@ -99,6 +92,19 @@ namespace Database.Models
                 entity.ToTable("Role");
 
                 entity.Property(e => e.Name).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<Saving>(entity =>
+            {
+                entity.ToTable("Saving");
+
+                entity.Property(e => e.Date).HasColumnType("datetime");
+
+                entity.HasOne(d => d.Balance)
+                    .WithMany(p => p.Savings)
+                    .HasForeignKey(d => d.BalanceId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Saving_Balance");
             });
 
             modelBuilder.Entity<Transaction>(entity =>
@@ -115,7 +121,13 @@ namespace Database.Models
                     .WithMany(p => p.Transactions)
                     .HasForeignKey(d => d.BalanceId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_BalanceToTransaction");
+                    .HasConstraintName("FK_Transaction_Balance");
+
+                entity.HasOne(d => d.Credit)
+                    .WithMany(p => p.Transactions)
+                    .HasForeignKey(d => d.CreditId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Transaction_Credit");
             });
 
             modelBuilder.Entity<User>(entity =>
