@@ -35,7 +35,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
 
     });
-//builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("KafkaSettings"));
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("KafkaSettings"));
 
 var app = builder.Build();
 app.UseAuthentication();
