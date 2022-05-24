@@ -61,6 +61,17 @@ namespace BalanceService.GraphQL
             {
                 if (sender.TotalBalance > input.Total)
                 {
+                    var transaksi = new Transaction
+                    {
+                        RecipientBalanceId = recipient.Id,
+                        SenderBalanceId= sender.Id,
+                        Total= input.Total,
+                        TransactionDate = DateTime.Now,
+                        Description = input.Description
+                    };
+                    context.Transactions.Add(transaksi);
+                    context.SaveChangesAsync();
+
                     sender.TotalBalance = (sender.TotalBalance - input.Total);
                     context.Balances.Update(sender);
                     context.SaveChangesAsync();
