@@ -7,10 +7,11 @@ namespace Database.Models
     {
         public Transaction()
         {
-            Payments = new HashSet<Payment>();
+            Bills = new HashSet<Bill>();
         }
 
         public int Id { get; set; }
+        public int CreditId { get; set; }
         public int BalanceId { get; set; }
         public double Total { get; set; }
         public DateTime TransactionDate { get; set; }
@@ -18,6 +19,7 @@ namespace Database.Models
         public DateTime CreatedDate { get; set; }
 
         public virtual Balance Balance { get; set; } = null!;
-        public virtual ICollection<Payment> Payments { get; set; }
+        public virtual Credit Credit { get; set; } = null!;
+        public virtual ICollection<Bill> Bills { get; set; }
     }
 }
