@@ -29,7 +29,7 @@ namespace SavingService.GraphQL
                     try
                     {
                         if (savings.BalanceId != 0)
-                    {
+                        {
                             savings.TotalSaving = savings.TotalSaving + (result.TotalMinutes*0.001*savings.TotalSaving);
                             savings.TotalSaving = savings.TotalSaving + input.Saving;
                             context.Savings.Update(savings);
@@ -42,9 +42,9 @@ namespace SavingService.GraphQL
                             transaction.Commit();
                             return await Task.FromResult(new OutputSaving("Saving Succesfully Updated", savings.TotalSaving, savings.Date));
                         
-                    }
-                    else
-                    {
+                        }
+                        else
+                        {
                         
                             savings.BalanceId = balance.Id;
                             savings.TotalSaving = input.Saving;
