@@ -19,7 +19,9 @@ namespace UserService.GraphQL
             {
                 if (adminRole.Value == "ADMIN")
                 {
+
                     return context.Users.Include(b=>b.Balances).Include(o => o.UserRoles).ThenInclude(r => r.Role).Select(p => new UserData()
+
                     {
                         Id = p.Id,
                         FullName = p.FullName,
@@ -45,6 +47,7 @@ namespace UserService.GraphQL
             return new List<UserData>().AsQueryable();
         }
 
+      
         [Authorize]
         public IQueryable<Role> GetUserRoleNasabah([Service] BankDotnetDbContext context, ClaimsPrincipal claimsPrincipal)
         {
