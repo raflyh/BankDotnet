@@ -10,5 +10,6 @@ namespace CreditService.GraphQL
         [Authorize(Roles = new[] { "CUSTOMER SERVICE" })]
         public IQueryable<Credit> GetCredits([Service] BankDotnetDbContext context) =>
             context.Credits;
+
     }
 }
