@@ -4,7 +4,6 @@
     (
         int? Id,
         int UserId,
-        float Limit,
-        DateTime DueDate
+        float Limit
         );
 }

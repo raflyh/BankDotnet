@@ -20,13 +20,17 @@ namespace CreditService.GraphQL
             {
                 Random rnd = new Random();
                 var random = Convert.ToString(rnd.Next(1000000000,2000000000));
+
+                //DateTime dueTime = new DateTime(0, 0, 30, 0, 0, 0);
+                //TimeSpan result = input.DueDate.AddMonths(1); 
+
                 var newCredit = new Credit
                 {
                     // EF
                     UserId = input.UserId,
                     Limit = input.Limit,
                     CreatedDate = DateTime.Now,
-                    DueDate = input.DueDate,
+                    DueDate = DateTime.Now.AddMonths(1),
                     TotalCredit = 0,
                     TotalBalance = saldo.TotalBalance, //pemanggilan totalBalance
                     CreditNumber ="12" + $"{random}"
@@ -51,7 +55,7 @@ namespace CreditService.GraphQL
             {
                 credit.UserId = nasabah.Id;
                 credit.Limit = input.Limit;
-                credit.DueDate = input.DueDate;
+                credit.DueDate = DateTime.Now.AddMonths(1);
 
                 context.Credits.Update(credit);
                 await context.SaveChangesAsync();
@@ -113,6 +117,70 @@ namespace CreditService.GraphQL
             };
 
         }
+        public async Task<CreditOutput> PaydebtCreditAsync(
+            PaymentWithCredit input,
+            [Service] BankDotnetDbContext context,
+            ClaimsPrincipal claimsPrincipal)
+        {
+            var username = claimsPrincipal.Identity.Name;
+            var user = context.Users.Where(o => o.Username == username).FirstOrDefault();
+            var balance = context.Balances.Where(a => a.UserId == user.Id).FirstOrDefault();
+            var credit = context.Credits.Where(a => a.UserId == user.Id).FirstOrDefault();
 
+            TimeSpan result = DateTime.Now.Subtract(credit.DueDate);
+            
+            
+            if (credit != null)
+            {
+                using var transaction = context.Database.BeginTransaction();
+                try 
+                {
+                    if (balance.TotalBalance > input.amountCredit)
+                    {
+                        if (credit.DueDate < DateTime.Now)
+                        {
+                            credit.TotalCredit = credit.TotalCredit + (result.TotalDays * 0.005 * credit.TotalCredit); //bunga per hari
+                        }
+
+                        credit.TotalCredit = credit.TotalCredit - input.amountCredit;
+                        credit.TotalBalance = credit.TotalBalance - input.amountCredit;
+                        context.Credits.Update(credit);
+                        context.SaveChanges();
+
+                        balance.TotalBalance = balance.TotalBalance - input.amountCredit;
+                        context.Balances.Update(balance);
+                        context.SaveChanges();
+
+                        var transac = new Transaction
+                        {
+                            CreditId = credit.Id,
+                            Total = input.amountCredit,
+                            TransactionDate = DateTime.Now
+                        };
+                        context.Transactions.Add(transac);
+                        context.SaveChanges();
+
+                        transaction.Commit();
+
+                        return new CreditOutput
+                        {
+                            TransactionDate = DateTime.Now.ToString(),
+                            Message = "Payment with Credit already succeed.",
+                            CreditNumber = credit.CreditNumber
+                        };
+                    }
+                }
+                catch (Exception err)
+                {
+                    transaction.Rollback();
+                }
+            }
+            return new CreditOutput
+            {
+                TransactionDate = DateTime.Now.ToString(),
+                Message = "Payment with Credit failed"
+            };
+
+        }
     }
 }
