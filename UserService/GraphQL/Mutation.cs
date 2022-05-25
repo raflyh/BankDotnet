@@ -92,7 +92,7 @@ namespace UserService.GraphQL
 
             if ( balances != null) throw new Exception("Balance sudah ada");
             Random rnd = new Random();
-            var random = Convert.ToString(rnd.Next());
+            var random = Convert.ToString(rnd.Next(1000000000,2000000000));
             var balance = new Balance
             {
                 UserId = newUser.Id,
