@@ -1,6 +1,11 @@
-﻿using Database.Models;
+﻿using BalanceService.Setting;
+using Database.Models;
 using HotChocolate.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Security.Claims;
+using System.Text;
 
 namespace BalanceService.GraphQL
 {
@@ -70,20 +75,18 @@ namespace BalanceService.GraphQL
                         Description = input.Description
                     };
                     context.Transactions.Add(transaksi);
-                    context.SaveChangesAsync();
 
                     sender.TotalBalance = (sender.TotalBalance - input.Total);
                     context.Balances.Update(sender);
-                    context.SaveChangesAsync();
 
                     recipient.TotalBalance = (recipient.TotalBalance + input.Total);
                     context.Balances.Update(recipient);
-                    context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
 
                     return new TransferOutput
                     {
                         TransactionDate = DateTime.Now.ToString(),
-                        Message = "Tranfer Berhasil",
+                        Message = "Transfer Berhasil",
                         SenderAccount = $"{userSender.FullName}-{sender.AccountNumber}",
                         RecipientAccount = $"{userRecipient.FullName}-{recipient.AccountNumber}",
                         Description = input.Description,
@@ -108,6 +111,39 @@ namespace BalanceService.GraphQL
                 };
             }
         }
+        [Authorize(Roles = new[] { "NASABAH" })]
+        public async Task<TopupOutput> AddRedeemCodeAsync(
+            TopupOpo input,
+            ClaimsPrincipal claimsPrincipal,
+            [Service] BankDotnetDbContext context, [Service] IOptions<KafkaSettings> settings)
+        {
+            const string src = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            int length = 16;
+            var sb = new StringBuilder();
+            Random rdm = new Random();
+            for (var i = 0; i < length; i++)
+            {
+                var c = src[rdm.Next(0, src.Length)];
+                sb.Append(c);
+            }
+            Console.WriteLine(sb.ToString());
+            input.Code = sb.ToString();
+            input.Total = input.Total ;
 
+            var dts = DateTime.Now.ToString();
+            var key = "TOPUP-OPO-" + dts;
+            var val = JObject.FromObject(input).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
+            var result = await KafkaHelper.SendMessage(settings.Value, "Latihan4", key, val);
+
+            TopupOutput resp = new TopupOutput
+            {
+                TransactionDate = dts,
+                Message = "Topup Berhasil"
+            };
+            if (!result)
+                resp.Message = "Failed to submit data";
+            return await Task.FromResult(resp);
+            
+        }
     }
 }
