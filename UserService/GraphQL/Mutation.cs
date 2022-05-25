@@ -101,7 +101,19 @@ namespace UserService.GraphQL
                 CreatedDate = DateTime.Now,
             };
 
+            var savings = context.Savings.Where(m => m.BalanceId == balance.Id).FirstOrDefault();
+
+            if (savings != null) throw new Exception("saving sudah ada");
+            
+            var saving = new Saving
+            {
+                BalanceId = balance.Id,
+                TotalSaving = 0,
+                Date = DateTime.Now
+            };
+
             newUser.Balances.Add(balance);
+            balance.Savings.Add(saving);
             newUser.UserRoles.Add(userRole);
             var ret = context.Users.Add(newUser);
 
