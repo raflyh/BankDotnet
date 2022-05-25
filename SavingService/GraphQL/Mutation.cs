@@ -25,49 +25,44 @@ namespace SavingService.GraphQL
                     TimeSpan result = DateTime.Now.Subtract(savings.Date);
                     savings.Date = DateTime.Now;
 
-                    if (savings.TotalSaving != 0)
+                    var transaction = context.Database.BeginTransaction();
+                    try
                     {
-                        var transaction = context.Database.BeginTransaction();
-                        try
-                        {
+                        if (savings.BalanceId != 0)
+                    {
                             savings.TotalSaving = savings.TotalSaving + (result.TotalMinutes*0.001*savings.TotalSaving);
                             savings.TotalSaving = savings.TotalSaving + input.Saving;
                             context.Savings.Update(savings);
-                            context.SaveChangesAsync();
+                            context.SaveChanges();
 
                             balance.TotalBalance = balance.TotalBalance - input.Saving;
                             context.Balances.Update(balance);
-                            context.SaveChangesAsync();
+                            context.SaveChanges();
 
-                            await transaction.CommitAsync();
+                            transaction.Commit();
                             return await Task.FromResult(new OutputSaving("Saving Succesfully Updated", savings.TotalSaving, savings.Date));
-                        }
-                        catch (Exception)
-                        {
-                            transaction.Rollback();
-                        }
+                        
                     }
                     else
                     {
-                        var transaction = context.Database.BeginTransaction();
-                        try
-                        {
+                        
                             savings.BalanceId = balance.Id;
                             savings.TotalSaving = input.Saving;
+                            savings.Date = DateTime.Now;
                             context.Savings.Add(savings);
-                            context.SaveChangesAsync();
+                            context.SaveChanges();
 
                             balance.TotalBalance = balance.TotalBalance - input.Saving;
                             context.Balances.Update(balance);
-                            context.SaveChangesAsync();
+                            context.SaveChanges();
 
-                            await transaction.CommitAsync();
+                            transaction.Commit();
                             return await Task.FromResult(new OutputSaving("Saving Succesfully Added", savings.TotalSaving, savings.Date));
                         }
-                        catch (Exception)
-                        {
-                            transaction.Rollback();
-                        }
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
                     }
                 }
                 else
@@ -91,11 +86,11 @@ namespace SavingService.GraphQL
             if (balance != null)
             {
                 var savings = context.Savings.Where(b => b.BalanceId == balance.Id).FirstOrDefault();
-                if(savings != null)
-                {
-                    TimeSpan result = DateTime.Now.Subtract(savings.Date);
-                    savings.Date = DateTime.Now;
+                TimeSpan result = DateTime.Now.Subtract(savings.Date);
+                savings.Date = DateTime.Now;
 
+                if (savings.BalanceId != 0)
+                {
                     savings.TotalSaving = savings.TotalSaving + (result.TotalMinutes * 0.001 * savings.TotalSaving);
                     context.Savings.Update(savings);
                     await context.SaveChangesAsync();
@@ -104,6 +99,7 @@ namespace SavingService.GraphQL
                 }
                 else
                 {
+                    Console.WriteLine($"ERROR {savings.BalanceId}");
                     savings.BalanceId = balance.Id;
                     savings.TotalSaving = 0;
                     savings.Date = DateTime.Now;
