@@ -43,22 +43,6 @@ namespace SavingService.GraphQL
                             return await Task.FromResult(new OutputSaving("Saving Succesfully Updated", savings.TotalSaving, savings.Date));
                         
                         }
-                        else
-                        {
-                        
-                            savings.BalanceId = balance.Id;
-                            savings.TotalSaving = input.Saving;
-                            savings.Date = DateTime.Now;
-                            context.Savings.Add(savings);
-                            context.SaveChanges();
-
-                            balance.TotalBalance = balance.TotalBalance - input.Saving;
-                            context.Balances.Update(balance);
-                            context.SaveChanges();
-
-                            transaction.Commit();
-                            return await Task.FromResult(new OutputSaving("Saving Succesfully Added", savings.TotalSaving, savings.Date));
-                        }
                     }
                     catch (Exception)
                     {
@@ -89,7 +73,7 @@ namespace SavingService.GraphQL
                 TimeSpan result = DateTime.Now.Subtract(savings.Date);
                 savings.Date = DateTime.Now;
 
-                if (savings.BalanceId != 0)
+                if (savings != null)
                 {
                     savings.TotalSaving = savings.TotalSaving + (result.TotalMinutes * 0.001 * savings.TotalSaving);
                     context.Savings.Update(savings);
@@ -97,21 +81,6 @@ namespace SavingService.GraphQL
 
                     return await Task.FromResult(new OutputSaving("Your Total Saving is :", savings.TotalSaving, savings.Date));
                 }
-                else
-                {
-                    Console.WriteLine($"ERROR {savings.BalanceId}");
-                    savings.BalanceId = balance.Id;
-                    savings.TotalSaving = 0;
-                    savings.Date = DateTime.Now;
-                    context.Savings.Add(savings);
-                    await context.SaveChangesAsync();
-
-                    return await Task.FromResult(new OutputSaving("Your Total Saving is :", savings.TotalSaving, savings.Date));
-                }
-            }
-            else
-            {
-                return await Task.FromResult(new OutputSaving("Balance Insufficient", 0, DateTime.Now));
             }
 
             return await Task.FromResult(new OutputSaving("Proses Unsuccesfully", 0, DateTime.Now));
