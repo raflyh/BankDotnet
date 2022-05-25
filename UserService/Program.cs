@@ -3,7 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Database.Models;
-using UserService.Settings;
+using UserService.Setting;
 using UserService.GraphQL;
 
 

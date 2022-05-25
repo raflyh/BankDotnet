@@ -4,8 +4,8 @@
     (
         string FullName,
         string UserName,
-        string Password,
+        string Password,      
         string PhoneNumber,
-        string Address
+        string Address 
     );
 }
