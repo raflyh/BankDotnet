@@ -16,7 +16,6 @@ namespace BalanceService.GraphQL
             BalanceInput input,
             [Service] BankDotnetDbContext context)
         {
-            // EF
             var nasabah = context.Balances.Where(x => x.AccountNumber == input.AccountNumber).FirstOrDefault();
             var user = context.Users.Where(o=>o.Id == nasabah.UserId).FirstOrDefault();
             if (nasabah != null)
@@ -44,7 +43,6 @@ namespace BalanceService.GraphQL
             TransferBalance input,
             [Service] BankDotnetDbContext context)
         {
-            // EF
             var recipient = context.Balances.Where(x => x.AccountNumber == input.RecipientAccountNumber).FirstOrDefault();
             var userRecipient = context.Users.Where(o => o.Id == recipient.UserId).FirstOrDefault();
             var sender = context.Balances.Where(s => s.AccountNumber == input.SenderAccountNumber).FirstOrDefault();
@@ -128,17 +126,17 @@ namespace BalanceService.GraphQL
             }
             Console.WriteLine(sb.ToString());
             input.Code = sb.ToString();
-            input.Total = input.Total ;
+            input.Amount = input.Amount;
 
             var dts = DateTime.Now.ToString();
-            var key = "TOPUP-OPO-" + dts;
+            var key = "TopupOPO-" + dts;
             var val = JObject.FromObject(input).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
             var result = await KafkaHelper.SendMessage(settings.Value, "Latihan4", key, val);
 
             TopupOutput resp = new TopupOutput
             {
                 TransactionDate = dts,
-                Message = "Topup Berhasil"
+                Message = "Create redeem code successful"
             };
             if (!result)
                 resp.Message = "Failed to submit data";
