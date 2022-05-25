@@ -66,7 +66,6 @@ namespace UserService.GraphQL
         {
             var role = context.Roles.Where(m => m.Name == "NASABAH").FirstOrDefault();
             var user = context.Users.Where(o => o.Username == input.UserName).FirstOrDefault();
-            
             if (user != null)
             {
                 return await Task.FromResult(new UserData());
@@ -89,6 +88,7 @@ namespace UserService.GraphQL
             };
 
             var balances = context.Balances.Where(m => m.UserId == newUser.Id).FirstOrDefault();
+
 
             if ( balances != null) throw new Exception("Balance sudah ada");
             Random rnd = new Random();
@@ -153,7 +153,6 @@ namespace UserService.GraphQL
             var ret = context.Users.Add(newUser);
 
             await context.SaveChangesAsync();
-
             return await Task.FromResult(new UserData
             {
                 Id = newUser.Id,
@@ -322,7 +321,5 @@ namespace UserService.GraphQL
             }
             return await Task.FromResult(user);
         }
-
-
     }
 }
