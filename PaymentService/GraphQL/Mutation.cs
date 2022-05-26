@@ -13,7 +13,7 @@ namespace PaymentService.GraphQL
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionStatus> PayTravikaAsync(
             BillPayment input,
-            [Service] ClaimsPrincipal claimsPrincipal,
+            ClaimsPrincipal claimsPrincipal,
             [Service] IOptions<KafkaSettings> settings,
             [Service] BankDotnetDbContext context)
         {
@@ -38,7 +38,6 @@ namespace PaymentService.GraphQL
                         {
                             var newTransaction = new Transaction
                             {
-                                CreditId = customerCredit.Id,
                                 SenderBalanceId = customerBalance.Id,
                                 RecipientBalanceId = travikaBalance.Id,
                                 BillId = bill.Id,
@@ -110,23 +109,17 @@ namespace PaymentService.GraphQL
                             };
                             context.Transactions.Add(newTransaction);
 
-                            var newCustCredit = new Credit
-                            {
-                                UserId = customerCredit.UserId,
-                                CreditNumber = customerCredit.CreditNumber,
-                                TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Credits.Add(newCustCredit);
+                            customerCredit.TotalCredit = customerCredit.TotalCredit + bill.TotalBill;
+                            context.Credits.Update(customerCredit);
 
-                            var newPdamBalance = new Balance
+                            var newTravikaBalance = new Balance
                             {
                                 UserId = travikaBalance.UserId,
                                 AccountNumber = travikaBalance.AccountNumber,
                                 TotalBalance = travikaBalance.TotalBalance + bill.TotalBill,
                                 CreatedDate = DateTime.Now
                             };
-                            context.Balances.Add(newPdamBalance);
+                            context.Balances.Add(newTravikaBalance);
 
                             //Update bill SQL
                             bill.CreditId = customerCredit.Id;
@@ -168,7 +161,7 @@ namespace PaymentService.GraphQL
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionStatus> PaySolakaAsync(
             BillPayment input,
-            [Service] ClaimsPrincipal claimsPrincipal,
+            ClaimsPrincipal claimsPrincipal,
             [Service] IOptions<KafkaSettings> settings,
             [Service] BankDotnetDbContext context)
         {
@@ -193,7 +186,6 @@ namespace PaymentService.GraphQL
                         {
                             var newTransaction = new Transaction
                             {
-                                CreditId = customerCredit.Id,
                                 SenderBalanceId = customerBalance.Id,
                                 RecipientBalanceId = solakaBalance.Id,
                                 BillId = bill.Id,
@@ -266,23 +258,17 @@ namespace PaymentService.GraphQL
                             };
                             context.Transactions.Add(newTransaction);
 
-                            var newCustCredit = new Credit
-                            {
-                                UserId = customerCredit.UserId,
-                                CreditNumber = customerCredit.CreditNumber,
-                                TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Credits.Add(newCustCredit);
+                            customerCredit.TotalCredit = customerCredit.TotalCredit + bill.TotalBill;
+                            context.Credits.Update(customerCredit);
 
-                            var newPdamBalance = new Balance
+                            var newSolakaBalance = new Balance
                             {
                                 UserId = solakaBalance.UserId,
                                 AccountNumber = solakaBalance.AccountNumber,
                                 TotalBalance = solakaBalance.TotalBalance + bill.TotalBill,
                                 CreatedDate = DateTime.Now
                             };
-                            context.Balances.Add(newPdamBalance);
+                            context.Balances.Add(newSolakaBalance);
 
                             //Update bill SQL
                             bill.CreditId = customerCredit.Id;
@@ -324,7 +310,7 @@ namespace PaymentService.GraphQL
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionStatus> PayElectricAsync(
             BillPayment input,
-            [Service] ClaimsPrincipal claimsPrincipal,
+            ClaimsPrincipal claimsPrincipal,
             [Service] BankDotnetDbContext context)
         {
             var userName = claimsPrincipal.Identity.Name;
@@ -343,7 +329,6 @@ namespace PaymentService.GraphQL
                     {
                         var newTransaction = new Transaction
                         {
-                            CreditId = customerCredit.Id,
                             SenderBalanceId = customerBalance.Id,
                             RecipientBalanceId = plnBalance.Id,
                             BillId = bill.Id,
@@ -400,18 +385,12 @@ namespace PaymentService.GraphQL
                             BillId = bill.Id,
                             Total = bill.TotalBill,
                             TransactionDate = DateTime.Now,
-                            Description = "Payment for Water Bill",
+                            Description = "Payment for Electric Bill",
                         };
                         context.Transactions.Add(newTransaction);
 
-                        var newCustCredit = new Credit
-                        {
-                            UserId = customerCredit.UserId,
-                            CreditNumber = customerCredit.CreditNumber,
-                            TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
-                            CreatedDate = DateTime.Now
-                        };
-                        context.Credits.Add(newCustCredit);
+                        customerCredit.TotalCredit = customerCredit.TotalCredit + bill.TotalBill;
+                        context.Credits.Update(customerCredit);
 
                         var newPlnBalance = new Balance
                         {
@@ -448,7 +427,7 @@ namespace PaymentService.GraphQL
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionStatus> PayWaterAsync(
             BillPayment input,
-            [Service] ClaimsPrincipal claimsPrincipal,
+            ClaimsPrincipal claimsPrincipal,
             [Service] BankDotnetDbContext context)
         {
             var userName = claimsPrincipal.Identity.Name;
@@ -467,7 +446,6 @@ namespace PaymentService.GraphQL
                     {
                         var newTransaction = new Transaction
                         {
-                            CreditId = customerCredit.Id,
                             SenderBalanceId = customerBalance.Id,
                             RecipientBalanceId = pdamBalance.Id,
                             BillId = bill.Id,
@@ -527,14 +505,8 @@ namespace PaymentService.GraphQL
                         };
                         context.Transactions.Add(newTransaction);
 
-                        var newCustCredit = new Credit
-                        {
-                            UserId = customerCredit.UserId,
-                            CreditNumber = customerCredit.CreditNumber,
-                            TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
-                            CreatedDate = DateTime.Now
-                        };
-                        context.Credits.Add(newCustCredit);
+                        customerCredit.TotalCredit = customerCredit.TotalCredit + bill.TotalBill;
+                        context.Credits.Update(customerCredit);
 
                         var newPdamBalance = new Balance
                         {
