@@ -24,134 +24,129 @@ namespace PaymentService.GraphQL
             var travika = context.Users.Where(o => o.Username.Contains("Travika")).FirstOrDefault();
             var travikaBalance = context.Balances.Where(o => o.UserId == travika.Id).OrderBy(o => o.Id).LastOrDefault();
 
-            //consume from kafka
-            var accept = await KafkaHelper.AcceptBills(settings.Value, context);
-            //=====================
-            if (accept > 0)
+            var bill = context.Bills.Where(o => o.PaymentStatus == "Accepted" && o.VirtualAccount == input.VirtualAccount).FirstOrDefault();//Sample
+            if (bill != null)
             {
-                var bill = context.Bills.Where(o => o.PaymentStatus == "Accepted" && o.VirtualAccount == input.VirtualAccount).FirstOrDefault();//Sample
-                if (bill != null)
+                if (input.Type == "Balance")
                 {
-                    if (input.Type == "Balance")
+                    if (customerBalance.TotalBalance >= bill.TotalBill)
                     {
-                        if (customerBalance.TotalBalance >= bill.TotalBill)
+                        var newTransaction = new Transaction
                         {
-                            var newTransaction = new Transaction
-                            {
-                                SenderBalanceId = customerBalance.Id,
-                                RecipientBalanceId = travikaBalance.Id,
-                                BillId = bill.Id,
-                                Total = bill.TotalBill,
-                                TransactionDate = DateTime.Now,
-                                Description = "Payment for Travika Bill",
-                            };
-                            context.Transactions.Add(newTransaction);
+                            SenderBalanceId = customerBalance.Id,
+                            RecipientBalanceId = travikaBalance.Id,
+                            BillId = bill.Id,
+                            Total = bill.TotalBill,
+                            TransactionDate = DateTime.Now,
+                            Description = "Payment for Travika Bill",
+                        };
+                        context.Transactions.Add(newTransaction);
 
-                            var newCustBalance = new Balance
-                            {
-                                UserId = customerBalance.UserId,
-                                AccountNumber = customerBalance.AccountNumber,
-                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newCustBalance);
+                        var newCustBalance = new Balance
+                        {
+                            UserId = customerBalance.UserId,
+                            AccountNumber = customerBalance.AccountNumber,
+                            TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newCustBalance);
 
-                            var newTravBalance = new Balance
-                            {
-                                UserId = travikaBalance.UserId,
-                                AccountNumber = travikaBalance.AccountNumber,
-                                TotalBalance = travikaBalance.TotalBalance + bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newTravBalance);
-                            //Update bill
-                            bill.BalanceId = customerBalance.Id;
-                            bill.PaymentStatus = "Paid";
-                            context.Bills.Update(bill);
-                            await context.SaveChangesAsync();
-                            //send kafka
-                            var sendPaymentStatus = new SendPaymentStatus
-                            {
-                                VirtualAccount = bill.VirtualAccount,
-                                Bills = bill.TotalBill,
-                                PaymentStatus = bill.PaymentStatus,
-                                TransactionId = bill.BillTransactionId
-                            };
-                            var key = "Payment-Status-" + DateTime.Now.ToString();
-                            var val = JsonConvert.SerializeObject(sendPaymentStatus);
-                            Console.WriteLine("====Sending Payment Status====");
-                            await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
-                            Console.WriteLine("====Payment Status Sent====");
-                            return await Task.FromResult(new TransactionStatus
-                            (
-                                true, "Bill Succesfully Paid!"
-                            ));
-                        }
+                        var newTravBalance = new Balance
+                        {
+                            UserId = travikaBalance.UserId,
+                            AccountNumber = travikaBalance.AccountNumber,
+                            TotalBalance = travikaBalance.TotalBalance + bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newTravBalance);
+                        //Update bill
+                        bill.BalanceId = customerBalance.Id;
+                        bill.PaymentStatus = "Paid";
+                        context.Bills.Update(bill);
+                        await context.SaveChangesAsync();
+                        //send kafka
+                        var sendPaymentStatus = new SendPaymentStatus
+                        {
+                            VirtualAccount = bill.VirtualAccount,
+                            Bills = bill.TotalBill,
+                            PaymentStatus = bill.PaymentStatus,
+                            TransactionId = bill.BillTransactionId
+                        };
+                        var key = "Payment-Status-" + DateTime.Now.ToString();
+                        var val = JsonConvert.SerializeObject(sendPaymentStatus);
+                        Console.WriteLine("====Sending Payment Status====");
+                        await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                        Console.WriteLine("====Payment Status Sent====");
                         return await Task.FromResult(new TransactionStatus
-                            (
-                                false, "Balance Insufficient!"
-                            ));
+                        (
+                            true, "Bill Succesfully Paid!"
+                        ));
                     }
-                    if (input.Type == "Credit")
+                    return await Task.FromResult(new TransactionStatus
+                        (
+                            false, "Balance Insufficient!"
+                        ));
+                }
+                if (input.Type == "Credit")
+                {
+                    double custLimit = customerCredit.Limit - customerCredit.TotalCredit;//check current limit
+                    if (custLimit >= bill.TotalBill)
                     {
-                        double custLimit = customerCredit.Limit - customerCredit.TotalCredit;//check current limit
-                        if (custLimit >= bill.TotalBill)
+                        var newTransaction = new Transaction
                         {
-                            var newTransaction = new Transaction
-                            {
-                                CreditId = customerCredit.Id,
-                                SenderBalanceId = customerBalance.Id,
-                                RecipientBalanceId = travikaBalance.Id,
-                                BillId = bill.Id,
-                                Total = bill.TotalBill,
-                                TransactionDate = DateTime.Now,
-                                Description = "Payment for Travika Bill",
-                            };
-                            context.Transactions.Add(newTransaction);
+                            CreditId = customerCredit.Id,
+                            SenderBalanceId = customerBalance.Id,
+                            RecipientBalanceId = travikaBalance.Id,
+                            BillId = bill.Id,
+                            Total = bill.TotalBill,
+                            TransactionDate = DateTime.Now,
+                            Description = "Payment for Travika Bill",
+                        };
+                        context.Transactions.Add(newTransaction);
 
-                            customerCredit.TotalCredit = customerCredit.TotalCredit + bill.TotalBill;
-                            context.Credits.Update(customerCredit);
+                        customerCredit.TotalCredit = customerCredit.TotalCredit + bill.TotalBill;
+                        context.Credits.Update(customerCredit);
 
-                            var newTravikaBalance = new Balance
-                            {
-                                UserId = travikaBalance.UserId,
-                                AccountNumber = travikaBalance.AccountNumber,
-                                TotalBalance = travikaBalance.TotalBalance + bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newTravikaBalance);
+                        var newTravikaBalance = new Balance
+                        {
+                            UserId = travikaBalance.UserId,
+                            AccountNumber = travikaBalance.AccountNumber,
+                            TotalBalance = travikaBalance.TotalBalance + bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newTravikaBalance);
 
-                            //Update bill SQL
-                            bill.CreditId = customerCredit.Id;
-                            bill.PaymentStatus = "Paid";
-                            context.Bills.Update(bill);
-                            await context.SaveChangesAsync();
-                            //send kafka
-                            var sendPaymentStatus = new SendPaymentStatus
-                            {
-                                VirtualAccount = bill.VirtualAccount,
-                                Bills = bill.TotalBill,
-                                PaymentStatus = bill.PaymentStatus,
-                                TransactionId = bill.BillTransactionId
-                            };
-                            var key = "Payment-Status-" + DateTime.Now.ToString();
-                            var val = JsonConvert.SerializeObject(sendPaymentStatus);
-                            Console.WriteLine("====Sending Payment Status====");
-                            await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
-                            Console.WriteLine("====Payment Status Sent====");
+                        //Update bill SQL
+                        bill.CreditId = customerCredit.Id;
+                        bill.PaymentStatus = "Paid";
+                        context.Bills.Update(bill);
+                        await context.SaveChangesAsync();
+                        //send kafka
+                        var sendPaymentStatus = new SendPaymentStatus
+                        {
+                            VirtualAccount = bill.VirtualAccount,
+                            Bills = bill.TotalBill,
+                            PaymentStatus = bill.PaymentStatus,
+                            TransactionId = bill.BillTransactionId
+                        };
+                        var key = "Payment-Status-" + DateTime.Now.ToString();
+                        var val = JsonConvert.SerializeObject(sendPaymentStatus);
+                        Console.WriteLine("====Sending Payment Status====");
+                        await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                        Console.WriteLine("====Payment Status Sent====");
 
-                            return await Task.FromResult(new TransactionStatus
-                            (
-                                true, "Bill Succesfully Paid!"
-                            ));
-                        }
                         return await Task.FromResult(new TransactionStatus
-                            (
-                                false, "Credit Denied!"
-                            ));
+                        (
+                            true, "Bill Succesfully Paid!"
+                        ));
                     }
+                    return await Task.FromResult(new TransactionStatus
+                        (
+                            false, "Credit Denied!"
+                        ));
                 }
             }
+            
             return await Task.FromResult(new TransactionStatus
                 (
                     false, "Travika Bill not Found!"
@@ -172,135 +167,131 @@ namespace PaymentService.GraphQL
             var solaka = context.Users.Where(o => o.Username.Contains("Solaka")).FirstOrDefault();
             var solakaBalance = context.Balances.Where(o => o.UserId == solaka.Id).OrderBy(o => o.Id).LastOrDefault();
 
-            //consume from kafka
-            var accept = await KafkaHelper.AcceptBills(settings.Value, context);
-            //=====================
-            if (accept > 0)
+
+            var bill = context.Bills.Where(o => o.PaymentStatus == "Accepted" && o.VirtualAccount == input.VirtualAccount).FirstOrDefault();//Sample
+            if (bill != null)
             {
-                var bill = context.Bills.Where(o => o.PaymentStatus == "Accepted" && o.VirtualAccount == input.VirtualAccount).FirstOrDefault();//Sample
-                if (bill != null)
+                if (input.Type == "Balance")
                 {
-                    if (input.Type == "Balance")
+                    if (customerBalance.TotalBalance >= bill.TotalBill)
                     {
-                        if (customerBalance.TotalBalance >= bill.TotalBill)
+                        var newTransaction = new Transaction
                         {
-                            var newTransaction = new Transaction
-                            {
-                                SenderBalanceId = customerBalance.Id,
-                                RecipientBalanceId = solakaBalance.Id,
-                                BillId = bill.Id,
-                                Total = bill.TotalBill,
-                                TransactionDate = DateTime.Now,
-                                Description = "Payment for Solaka Bill",
-                            };
-                            context.Transactions.Add(newTransaction);
+                            SenderBalanceId = customerBalance.Id,
+                            RecipientBalanceId = solakaBalance.Id,
+                            BillId = bill.Id,
+                            Total = bill.TotalBill,
+                            TransactionDate = DateTime.Now,
+                            Description = "Payment for Solaka Bill",
+                        };
+                        context.Transactions.Add(newTransaction);
 
-                            var newCustBalance = new Balance
-                            {
-                                UserId = customerBalance.UserId,
-                                AccountNumber = customerBalance.AccountNumber,
-                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newCustBalance);
+                        var newCustBalance = new Balance
+                        {
+                            UserId = customerBalance.UserId,
+                            AccountNumber = customerBalance.AccountNumber,
+                            TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newCustBalance);
 
-                            var newSolaBalance = new Balance
-                            {
-                                UserId = solakaBalance.UserId,
-                                AccountNumber = solakaBalance.AccountNumber,
-                                TotalBalance = solakaBalance.TotalBalance + bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newSolaBalance);
-                            //Update bill SQL
-                            bill.VirtualAccount = input.VirtualAccount;
-                            bill.BalanceId = customerBalance.Id;
-                            bill.PaymentStatus = "Paid";
-                            context.Bills.Update(bill);
-                            await context.SaveChangesAsync();
-                            //send kafka
-                            var sendPaymentStatus = new SendPaymentStatus
-                            {
-                                VirtualAccount = bill.VirtualAccount,
-                                Bills = bill.TotalBill,
-                                PaymentStatus = bill.PaymentStatus,
-                                TransactionId = bill.BillTransactionId
-                            };
-                            var key = "Payment-Status-" + DateTime.Now.ToString();
-                            var val = JsonConvert.SerializeObject(sendPaymentStatus);
-                            Console.WriteLine("====Sending Payment Status====");
-                            await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
-                            Console.WriteLine("====Payment Status Sent====");
-                            return await Task.FromResult(new TransactionStatus
-                            (
-                                true, "Bill Succesfully Paid!"
-                            ));
-                        }
+                        var newSolaBalance = new Balance
+                        {
+                            UserId = solakaBalance.UserId,
+                            AccountNumber = solakaBalance.AccountNumber,
+                            TotalBalance = solakaBalance.TotalBalance + bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newSolaBalance);
+                        //Update bill SQL
+                        bill.VirtualAccount = input.VirtualAccount;
+                        bill.BalanceId = customerBalance.Id;
+                        bill.PaymentStatus = "Paid";
+                        context.Bills.Update(bill);
+                        await context.SaveChangesAsync();
+                        //send kafka
+                        var sendPaymentStatus = new SendPaymentStatus
+                        {
+                            VirtualAccount = bill.VirtualAccount,
+                            Bills = bill.TotalBill,
+                            PaymentStatus = bill.PaymentStatus,
+                            TransactionId = bill.BillTransactionId
+                        };
+                        var key = "Payment-Status-" + DateTime.Now.ToString();
+                        var val = JsonConvert.SerializeObject(sendPaymentStatus);
+                        Console.WriteLine("====Sending Payment Status====");
+                        await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                        Console.WriteLine("====Payment Status Sent====");
                         return await Task.FromResult(new TransactionStatus
-                             (
-                                 false, "Balance Insufficient!"
-                             ));
+                        (
+                            true, "Bill Succesfully Paid!"
+                        ));
                     }
-                    if (input.Type == "Credit")
+                    return await Task.FromResult(new TransactionStatus
+                            (
+                                false, "Balance Insufficient!"
+                            ));
+                }
+                if (input.Type == "Credit")
+                {
+                    double custLimit = customerCredit.Limit - customerCredit.TotalCredit;//check current limit
+                    if (custLimit >= bill.TotalBill)
                     {
-                        double custLimit = customerCredit.Limit - customerCredit.TotalCredit;//check current limit
-                        if (custLimit >= bill.TotalBill)
+                        var newTransaction = new Transaction
                         {
-                            var newTransaction = new Transaction
-                            {
-                                CreditId = customerCredit.Id,
-                                SenderBalanceId = customerBalance.Id,
-                                RecipientBalanceId = solakaBalance.Id,
-                                BillId = bill.Id,
-                                Total = bill.TotalBill,
-                                TransactionDate = DateTime.Now,
-                                Description = "Payment for Solaka Bill",
-                            };
-                            context.Transactions.Add(newTransaction);
+                            CreditId = customerCredit.Id,
+                            SenderBalanceId = customerBalance.Id,
+                            RecipientBalanceId = solakaBalance.Id,
+                            BillId = bill.Id,
+                            Total = bill.TotalBill,
+                            TransactionDate = DateTime.Now,
+                            Description = "Payment for Solaka Bill",
+                        };
+                        context.Transactions.Add(newTransaction);
 
-                            customerCredit.TotalCredit = customerCredit.TotalCredit + bill.TotalBill;
-                            context.Credits.Update(customerCredit);
+                        customerCredit.TotalCredit = customerCredit.TotalCredit + bill.TotalBill;
+                        context.Credits.Update(customerCredit);
 
-                            var newSolakaBalance = new Balance
-                            {
-                                UserId = solakaBalance.UserId,
-                                AccountNumber = solakaBalance.AccountNumber,
-                                TotalBalance = solakaBalance.TotalBalance + bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newSolakaBalance);
+                        var newSolakaBalance = new Balance
+                        {
+                            UserId = solakaBalance.UserId,
+                            AccountNumber = solakaBalance.AccountNumber,
+                            TotalBalance = solakaBalance.TotalBalance + bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newSolakaBalance);
 
-                            //Update bill SQL
-                            bill.CreditId = customerCredit.Id;
-                            bill.PaymentStatus = "Paid";
-                            context.Bills.Update(bill);
-                            await context.SaveChangesAsync();
-                            //send kafka
-                            var sendPaymentStatus = new SendPaymentStatus
-                            {
-                                VirtualAccount = bill.VirtualAccount,
-                                Bills = bill.TotalBill,
-                                PaymentStatus = bill.PaymentStatus,
-                                TransactionId = bill.BillTransactionId
-                            };
-                            var key = "Payment-Status-" + DateTime.Now.ToString();
-                            var val = JsonConvert.SerializeObject(sendPaymentStatus);
-                            Console.WriteLine("====Sending Payment Status====");
-                            await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
-                            Console.WriteLine("====Payment Status Sent====");
+                        //Update bill SQL
+                        bill.CreditId = customerCredit.Id;
+                        bill.PaymentStatus = "Paid";
+                        context.Bills.Update(bill);
+                        await context.SaveChangesAsync();
+                        //send kafka
+                        var sendPaymentStatus = new SendPaymentStatus
+                        {
+                            VirtualAccount = bill.VirtualAccount,
+                            Bills = bill.TotalBill,
+                            PaymentStatus = bill.PaymentStatus,
+                            TransactionId = bill.BillTransactionId
+                        };
+                        var key = "Payment-Status-" + DateTime.Now.ToString();
+                        var val = JsonConvert.SerializeObject(sendPaymentStatus);
+                        Console.WriteLine("====Sending Payment Status====");
+                        await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                        Console.WriteLine("====Payment Status Sent====");
 
-                            return await Task.FromResult(new TransactionStatus
-                            (
-                                true, "Bill Succesfully Paid!"
-                            ));
-                        }
                         return await Task.FromResult(new TransactionStatus
-                            (
-                                false, "Credit Denied!"
-                            ));
+                        (
+                            true, "Bill Succesfully Paid!"
+                        ));
                     }
+                    return await Task.FromResult(new TransactionStatus
+                        (
+                            false, "Credit Denied!"
+                        ));
                 }
             }
+            
             return await Task.FromResult(new TransactionStatus
                 (
                     false, "Solaka Bill not Found!"
