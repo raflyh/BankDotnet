@@ -38,7 +38,6 @@ namespace BalanceService.GraphQL
                 Message = $"Data Nasabah Dengan No Rekening : {nasabah.AccountNumber} Tidak Ditemukan",
             };
         }
-
         [Authorize(Roles = new[] { "CUSTOMER SERVICE" })]
         public async Task<TransferOutput> AddTransferWithCSAsync(
             TransferBalance input,
@@ -110,8 +109,6 @@ namespace BalanceService.GraphQL
                 };
             }
         }
-
-
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransferOutput> AddTransferAsync(
             TransferBalance input,
@@ -183,7 +180,6 @@ namespace BalanceService.GraphQL
                 };
             }
         }
-
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TopupOutput> AddRedeemCodeAsync(
             TopupOpo input,
@@ -237,7 +233,6 @@ namespace BalanceService.GraphQL
 
             return await Task.FromResult(resp);
         }
-
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionOutput> PaymentOpoAsync(
             BillPayment input,
