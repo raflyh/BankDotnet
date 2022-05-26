@@ -303,7 +303,7 @@ namespace UserService.GraphQL
           [Service] BankDotnetDbContext context)
         {
             var user = context.UserRoles.Where(o => o.UserId == input.UserId).FirstOrDefault();
-            if (user != null) return new UserRole();
+            if (user != null) return new UserRole {Id = 0, RoleId = 0, UserId = 0 };
             var userRole = new UserRole
             {
                 UserId = input.UserId,
@@ -322,7 +322,7 @@ namespace UserService.GraphQL
           [Service] BankDotnetDbContext context)
         {
             var user = context.UserRoles.Where(o => o.UserId == input.UserId).FirstOrDefault();
-            if (user == null) return new UserRole();
+            if (user == null) return new UserRole { Id = 0, RoleId = 0, UserId = 0 };
            
             user.RoleId = input.RoleId;
 
@@ -338,7 +338,7 @@ namespace UserService.GraphQL
         int id,
         [Service] BankDotnetDbContext context)
         {
-            var user = context.Users.Where(o => o.Id == id).Include(u => u.UserRoles).FirstOrDefault();
+            var user = context.Users.Where(o => o.Id == id).Include(u => u.UserRoles).Include(c=>c.Credits).Include(b=>b.Balances).FirstOrDefault();
             if (user != null)
             {
                 context.Users.Remove(user);
@@ -386,7 +386,7 @@ namespace UserService.GraphQL
                     return await Task.FromResult(newBill);
                 }
             }
-            return new Bill();
+            return new Bill { VirtualAccount = "User Tidak Ada"};
         }
     }
 }
