@@ -206,7 +206,7 @@ namespace BalanceService.GraphQL
             var dts = DateTime.Now.ToString();
             var key = "RedeemCode-" + dts;
             var val = JObject.FromObject(input).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
-            var result = await KafkaHelper.SendMessage(settings.Value, "simpleOrder", key, val);
+            var result = await KafkaHelper.SendMessage(settings.Value, "RedeemCode", key, val);
             
             TopupOutput resp = new TopupOutput
             {
@@ -238,8 +238,7 @@ namespace BalanceService.GraphQL
             BillPayment input,
             [Service] BankDotnetDbContext context, ClaimsPrincipal claimsPrincipal, [Service] IOptions<KafkaSettings> settings)
         {
-            await KafkaHelper.AcceptBills(settings.Value, context);
-
+           
             var userName = claimsPrincipal.Identity.Name;
             var opo = context.Users.Where(o => o.Username.Contains("OPO")).FirstOrDefault();
             var customer = context.Users.Where(o => o.Username == userName).FirstOrDefault();
@@ -247,7 +246,7 @@ namespace BalanceService.GraphQL
             var customerCredit = context.Credits.Where(o => o.UserId == customer.Id).OrderBy(o => o.Id).LastOrDefault();
             var opoBalance = context.Balances.Where(o => o.UserId == opo.Id).FirstOrDefault();
 
-            var bill = context.Bills.Where(o => o.PaymentStatus != "Paid" && o.Type.Contains("OPO")).FirstOrDefault();//Sample
+            var bill = context.Bills.Where(o => o.PaymentStatus != "Paid").FirstOrDefault();//Sample
             if (bill == null)
             {
                 return new TransactionOutput
@@ -296,7 +295,7 @@ namespace BalanceService.GraphQL
                     var dts = DateTime.Now.ToString();
                     var key = "TopupOpo-" + dts;
                     var val = JObject.FromObject(recive).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
-                    var result = await KafkaHelper.SendMessage(settings.Value, "simpleOrder", key, val);
+                    var result = await KafkaHelper.SendMessage(settings.Value, "TopupOpo", key, val);
 
                     return new TransactionOutput
                     {
