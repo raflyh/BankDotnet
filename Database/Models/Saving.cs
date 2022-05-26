@@ -8,6 +8,7 @@ namespace Database.Models
         public int Id { get; set; }
         public int BalanceId { get; set; }
         public double TotalSaving { get; set; }
+        public double TotalGold { get; set; }
         public DateTime Date { get; set; }
 
         public virtual Balance Balance { get; set; } = null!;

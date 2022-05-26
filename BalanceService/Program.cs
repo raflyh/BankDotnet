@@ -1,9 +1,11 @@
 using BalanceService.GraphQL;
 using BalanceService.Setting;
+using Confluent.Kafka;
 using Database.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,7 +38,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
     });
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("KafkaSettings"));
-
+ 
 var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
