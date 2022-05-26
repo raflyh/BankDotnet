@@ -15,8 +15,8 @@ namespace Database.Models
         public int? BalanceId { get; set; }
         public string VirtualAccount { get; set; } = null!;
         public double TotalBill { get; set; }
-        public string? PaymentStatus { get; set; }
-        public string Type { get; set; } = null!;
+        public string PaymentStatus { get; set; } = null!;
+        public string? Type { get; set; }
 
         public virtual Balance? Balance { get; set; }
         public virtual Credit? Credit { get; set; }

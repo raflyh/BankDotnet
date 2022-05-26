@@ -10,7 +10,7 @@ namespace PaymentService.GraphQL
 {
     public class Mutation
     {
-        [Authorize(Roles = new[] { "CUSTOMER" })]
+        [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionStatus> PayTravikaAsync(
             BillPayment input,
             [Service] ClaimsPrincipal claimsPrincipal,
@@ -29,79 +29,120 @@ namespace PaymentService.GraphQL
             //=====================
             if (accept > 0)
             {
-                var bill = context.Bills.Where(o => o.PaymentStatus == "Accepted" && o.VirtualAccount.StartsWith("078")).FirstOrDefault();//Sample
+                var bill = context.Bills.Where(o => o.PaymentStatus == "Accepted" && o.VirtualAccount == input.VirtualAccount).FirstOrDefault();//Sample
                 if (bill != null)
                 {
-                    if (bill.VirtualAccount == input.VirtualAccount)
+                    if (input.Type == "Balance")
                     {
-                        if (input.Type == "Balance")
+                        if (customerBalance.TotalBalance >= bill.TotalBill)
                         {
-                            if (customerBalance.TotalBalance >= bill.TotalBill)
+                            var newTransaction = new Transaction
                             {
-                                var newTransaction = new Transaction
-                                {
-                                    CreditId = customerCredit.Id,
-                                    SenderBalanceId = customerBalance.Id,
-                                    RecipientBalanceId = travikaBalance.Id,
-                                    BillId = bill.Id,
-                                    Total = bill.TotalBill,
-                                    TransactionDate = DateTime.Now,
-                                    Description = "Payment for Travika Bill",
-                                };
-                                context.Transactions.Add(newTransaction);
+                                CreditId = customerCredit.Id,
+                                SenderBalanceId = customerBalance.Id,
+                                RecipientBalanceId = travikaBalance.Id,
+                                BillId = bill.Id,
+                                Total = bill.TotalBill,
+                                TransactionDate = DateTime.Now,
+                                Description = "Payment for Travika Bill",
+                            };
+                            context.Transactions.Add(newTransaction);
 
-                                var newCustBalance = new Balance
-                                {
-                                    UserId = customerBalance.UserId,
-                                    AccountNumber = customerBalance.AccountNumber,
-                                    TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
-                                    CreatedDate = DateTime.Now
-                                };
-                                context.Balances.Add(newCustBalance);
+                            var newCustBalance = new Balance
+                            {
+                                UserId = customerBalance.UserId,
+                                AccountNumber = customerBalance.AccountNumber,
+                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                                CreatedDate = DateTime.Now
+                            };
+                            context.Balances.Add(newCustBalance);
 
-                                var newTravBalance = new Balance
-                                {
-                                    UserId = travikaBalance.UserId,
-                                    AccountNumber = travikaBalance.AccountNumber,
-                                    TotalBalance = travikaBalance.TotalBalance + bill.TotalBill,
-                                    CreatedDate = DateTime.Now
-                                };
-                                context.Balances.Add(newTravBalance);
-                                //Update bill
-                                bill.BalanceId = customerBalance.Id;
-                                bill.PaymentStatus = "Paid";
-                                context.Bills.Update(bill);
-                                await context.SaveChangesAsync();
-                                //send kafka
-                                var sendPaymentStatus = new SendPaymentStatus
-                                {
-                                    VirtualAccount = bill.VirtualAccount,
-                                    Bills = bill.TotalBill,
-                                    PaymentStatus = bill.PaymentStatus
-                                };
-                                var key = "Payment-Status-" + DateTime.Now.ToString();
-                                var val = JsonConvert.SerializeObject(sendPaymentStatus);
-                                Console.WriteLine("====Sending Payment Status====");
-                                await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
-                                Console.WriteLine("====Payment Status Sent====");
-                                return await Task.FromResult(new TransactionStatus
-                                (
-                                    true, "Bill Succesfully Paid!"
-                                ));
-                            }
+                            var newTravBalance = new Balance
+                            {
+                                UserId = travikaBalance.UserId,
+                                AccountNumber = travikaBalance.AccountNumber,
+                                TotalBalance = travikaBalance.TotalBalance + bill.TotalBill,
+                                CreatedDate = DateTime.Now
+                            };
+                            context.Balances.Add(newTravBalance);
+                            //Update bill
+                            bill.BalanceId = customerBalance.Id;
+                            bill.PaymentStatus = "Paid";
+                            context.Bills.Update(bill);
+                            await context.SaveChangesAsync();
+                            //send kafka
+                            var sendPaymentStatus = new SendPaymentStatus
+                            {
+                                VirtualAccount = bill.VirtualAccount,
+                                Bills = bill.TotalBill,
+                                PaymentStatus = bill.PaymentStatus
+                            };
+                            var key = "Payment-Status-" + DateTime.Now.ToString();
+                            var val = JsonConvert.SerializeObject(sendPaymentStatus);
+                            Console.WriteLine("====Sending Payment Status====");
+                            await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                            Console.WriteLine("====Payment Status Sent====");
                             return await Task.FromResult(new TransactionStatus
-                                (
-                                    false, "Balance Insufficient!"
-                                ));
-                        }
-                        if (input.Type == "Credit")
-                        {
-                            //
+                            (
+                                true, "Bill Succesfully Paid!"
+                            ));
                         }
                         return await Task.FromResult(new TransactionStatus
-                        (
-                            false, "Virtual Account Invalid!"
-                        ));
+                            (
+                                false, "Balance Insufficient!"
+                            ));
+                    }
+                    if (input.Type == "Credit")
+                    {
+                        double custLimit = customerCredit.Limit - customerCredit.TotalCredit;//check current limit
+                        if (custLimit >= bill.TotalBill)
+                        {
+                            var newTransaction = new Transaction
+                            {
+                                CreditId = customerCredit.Id,
+                                SenderBalanceId = customerBalance.Id,
+                                RecipientBalanceId = travikaBalance.Id,
+                                BillId = bill.Id,
+                                Total = bill.TotalBill,
+                                TransactionDate = DateTime.Now,
+                                Description = "Payment for Travika Bill",
+                            };
+                            context.Transactions.Add(newTransaction);
+
+                            var newCustCredit = new Credit
+                            {
+                                UserId = customerCredit.UserId,
+                                CreditNumber = customerCredit.CreditNumber,
+                                TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
+                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                                CreatedDate = DateTime.Now
+                            };
+                            context.Credits.Add(newCustCredit);
+
+                            var newPdamBalance = new Balance
+                            {
+                                UserId = travikaBalance.UserId,
+                                AccountNumber = travikaBalance.AccountNumber,
+                                TotalBalance = travikaBalance.TotalBalance + bill.TotalBill,
+                                CreatedDate = DateTime.Now
+                            };
+                            context.Balances.Add(newPdamBalance);
+
+                            //Update bill SQL
+                            bill.CreditId = customerCredit.Id;
+                            bill.PaymentStatus = "Paid";
+                            context.Bills.Update(bill);
+                            await context.SaveChangesAsync();
+
+                            return await Task.FromResult(new TransactionStatus
+                            (
+                                true, "Bill Succesfully Paid!"
+                            ));
+                        }
+                        return await Task.FromResult(new TransactionStatus
+                            (
+                                false, "Credit Denied!"
+                            ));
                     }
                 }
             }
@@ -111,7 +152,7 @@ namespace PaymentService.GraphQL
                 ));
         }
 
-        [Authorize(Roles = new[] { "CUSTOMER" })]
+        [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionStatus> PaySolakaAsync(
             BillPayment input,
             [Service] ClaimsPrincipal claimsPrincipal,
@@ -130,80 +171,121 @@ namespace PaymentService.GraphQL
             //=====================
             if (accept > 0)
             {
-                var bill = context.Bills.Where(o => o.PaymentStatus == "Accepted" && o.VirtualAccount.Contains("077")).FirstOrDefault();//Sample
+                var bill = context.Bills.Where(o => o.PaymentStatus == "Accepted" && o.VirtualAccount == input.VirtualAccount).FirstOrDefault();//Sample
                 if (bill != null)
                 {
-                    if (bill.VirtualAccount == input.VirtualAccount)
+                    if (input.Type == "Balance")
                     {
-                        if (input.Type == "Balance")
+                        if (customerBalance.TotalBalance >= bill.TotalBill)
                         {
-                            if (customerBalance.TotalBalance >= bill.TotalBill)
+                            var newTransaction = new Transaction
                             {
-                                var newTransaction = new Transaction
-                                {
-                                    CreditId = customerCredit.Id,
-                                    SenderBalanceId = customerBalance.Id,
-                                    RecipientBalanceId = solakaBalance.Id,
-                                    BillId = bill.Id,
-                                    Total = bill.TotalBill,
-                                    TransactionDate = DateTime.Now,
-                                    Description = "Payment for Solaka Bill",
-                                };
-                                context.Transactions.Add(newTransaction);
+                                CreditId = customerCredit.Id,
+                                SenderBalanceId = customerBalance.Id,
+                                RecipientBalanceId = solakaBalance.Id,
+                                BillId = bill.Id,
+                                Total = bill.TotalBill,
+                                TransactionDate = DateTime.Now,
+                                Description = "Payment for Solaka Bill",
+                            };
+                            context.Transactions.Add(newTransaction);
 
-                                var newCustBalance = new Balance
-                                {
-                                    UserId = customerBalance.UserId,
-                                    AccountNumber = customerBalance.AccountNumber,
-                                    TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
-                                    CreatedDate = DateTime.Now
-                                };
-                                context.Balances.Add(newCustBalance);
+                            var newCustBalance = new Balance
+                            {
+                                UserId = customerBalance.UserId,
+                                AccountNumber = customerBalance.AccountNumber,
+                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                                CreatedDate = DateTime.Now
+                            };
+                            context.Balances.Add(newCustBalance);
 
-                                var newSolaBalance = new Balance
-                                {
-                                    UserId = solakaBalance.UserId,
-                                    AccountNumber = solakaBalance.AccountNumber,
-                                    TotalBalance = solakaBalance.TotalBalance + bill.TotalBill,
-                                    CreatedDate = DateTime.Now
-                                };
-                                context.Balances.Add(newSolaBalance);
-                                //Update bill SQL
-                                bill.VirtualAccount = input.VirtualAccount;
-                                bill.BalanceId = customerBalance.Id;
-                                bill.PaymentStatus = "Paid";
-                                context.Bills.Update(bill);
-                                await context.SaveChangesAsync();
-                                //send kafka
-                                var sendPaymentStatus = new SendPaymentStatus
-                                {
-                                    VirtualAccount = bill.VirtualAccount,
-                                    Bills = bill.TotalBill,
-                                    PaymentStatus = bill.PaymentStatus
-                                };
-                                var key = "Payment-Status-" + DateTime.Now.ToString();
-                                var val = JsonConvert.SerializeObject(sendPaymentStatus);
-                                Console.WriteLine("====Sending Payment Status====");
-                                await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
-                                Console.WriteLine("====Payment Status Sent====");
-                                return await Task.FromResult(new TransactionStatus
-                                (
-                                    true, "Bill Succesfully Paid!"
-                                ));
-                            }
+                            var newSolaBalance = new Balance
+                            {
+                                UserId = solakaBalance.UserId,
+                                AccountNumber = solakaBalance.AccountNumber,
+                                TotalBalance = solakaBalance.TotalBalance + bill.TotalBill,
+                                CreatedDate = DateTime.Now
+                            };
+                            context.Balances.Add(newSolaBalance);
+                            //Update bill SQL
+                            bill.VirtualAccount = input.VirtualAccount;
+                            bill.BalanceId = customerBalance.Id;
+                            bill.PaymentStatus = "Paid";
+                            context.Bills.Update(bill);
+                            await context.SaveChangesAsync();
+                            //send kafka
+                            var sendPaymentStatus = new SendPaymentStatus
+                            {
+                                VirtualAccount = bill.VirtualAccount,
+                                Bills = bill.TotalBill,
+                                PaymentStatus = bill.PaymentStatus
+                            };
+                            var key = "Payment-Status-" + DateTime.Now.ToString();
+                            var val = JsonConvert.SerializeObject(sendPaymentStatus);
+                            Console.WriteLine("====Sending Payment Status====");
+                            await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                            Console.WriteLine("====Payment Status Sent====");
                             return await Task.FromResult(new TransactionStatus
-                                 (
-                                     false, "Balance Insufficient!"
-                                 ));
-                        }
-                        if (input.Type == "Credit")
-                        {
-                            //
+                            (
+                                true, "Bill Succesfully Paid!"
+                            ));
                         }
                         return await Task.FromResult(new TransactionStatus
-                        (
-                            false, "Virtual Account Invalid!"
-                        ));
+                             (
+                                 false, "Balance Insufficient!"
+                             ));
+                    }
+                    if (input.Type == "Credit")
+                    {
+                        double custLimit = customerCredit.Limit - customerCredit.TotalCredit;//check current limit
+                        if (custLimit >= bill.TotalBill)
+                        {
+                            var newTransaction = new Transaction
+                            {
+                                CreditId = customerCredit.Id,
+                                SenderBalanceId = customerBalance.Id,
+                                RecipientBalanceId = solakaBalance.Id,
+                                BillId = bill.Id,
+                                Total = bill.TotalBill,
+                                TransactionDate = DateTime.Now,
+                                Description = "Payment for Solaka Bill",
+                            };
+                            context.Transactions.Add(newTransaction);
+
+                            var newCustCredit = new Credit
+                            {
+                                UserId = customerCredit.UserId,
+                                CreditNumber = customerCredit.CreditNumber,
+                                TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
+                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                                CreatedDate = DateTime.Now
+                            };
+                            context.Credits.Add(newCustCredit);
+
+                            var newPdamBalance = new Balance
+                            {
+                                UserId = solakaBalance.UserId,
+                                AccountNumber = solakaBalance.AccountNumber,
+                                TotalBalance = solakaBalance.TotalBalance + bill.TotalBill,
+                                CreatedDate = DateTime.Now
+                            };
+                            context.Balances.Add(newPdamBalance);
+
+                            //Update bill SQL
+                            bill.CreditId = customerCredit.Id;
+                            bill.PaymentStatus = "Paid";
+                            context.Bills.Update(bill);
+                            await context.SaveChangesAsync();
+
+                            return await Task.FromResult(new TransactionStatus
+                            (
+                                true, "Bill Succesfully Paid!"
+                            ));
+                        }
+                        return await Task.FromResult(new TransactionStatus
+                            (
+                                false, "Credit Denied!"
+                            ));
                     }
                 }
             }
@@ -213,7 +295,7 @@ namespace PaymentService.GraphQL
                 ));
         }
 
-        [Authorize(Roles = new[] { "CUSTOMER" })]
+        [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionStatus> PayElectricAsync(
             BillPayment input,
             [Service] ClaimsPrincipal claimsPrincipal,
@@ -226,70 +308,110 @@ namespace PaymentService.GraphQL
             var pln = context.Users.Where(o => o.Username.Contains("PLN")).FirstOrDefault();
             var plnBalance = context.Balances.Where(o => o.UserId == pln.Id).OrderBy(o => o.Id).LastOrDefault();
 
-            var bill = context.Bills.Where(o => o.PaymentStatus == "Unpaid" && o.VirtualAccount.Contains("079")).FirstOrDefault();//Sample
+            var bill = context.Bills.Where(o => o.PaymentStatus == "Unpaid" && o.VirtualAccount == input.VirtualAccount).FirstOrDefault();//Sample
             if (bill != null)
             {
-                if (bill.VirtualAccount == input.VirtualAccount)
+                if (input.Type == "Balance")
                 {
-                    if (input.Type == "Balance")
+                    if (customerBalance.TotalBalance >= bill.TotalBill)
                     {
-                        if (customerBalance.TotalBalance >= bill.TotalBill)
+                        var newTransaction = new Transaction
                         {
-                            var newTransaction = new Transaction
-                            {
-                                CreditId = customerCredit.Id,
-                                SenderBalanceId = customerBalance.Id,
-                                RecipientBalanceId = plnBalance.Id,
-                                BillId = bill.Id,
-                                Total = bill.TotalBill,
-                                TransactionDate = DateTime.Now,
-                                Description = "Payment for Electric Bill",
-                            };
-                            context.Transactions.Add(newTransaction);
+                            CreditId = customerCredit.Id,
+                            SenderBalanceId = customerBalance.Id,
+                            RecipientBalanceId = plnBalance.Id,
+                            BillId = bill.Id,
+                            Total = bill.TotalBill,
+                            TransactionDate = DateTime.Now,
+                            Description = "Payment for Electric Bill",
+                        };
+                        context.Transactions.Add(newTransaction);
 
-                            var newCustBalance = new Balance
-                            {
-                                UserId = customerBalance.UserId,
-                                AccountNumber = customerBalance.AccountNumber,
-                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newCustBalance);
+                        var newCustBalance = new Balance
+                        {
+                            UserId = customerBalance.UserId,
+                            AccountNumber = customerBalance.AccountNumber,
+                            TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newCustBalance);
 
-                            var newSolaBalance = new Balance
-                            {
-                                UserId = plnBalance.UserId,
-                                AccountNumber = plnBalance.AccountNumber,
-                                TotalBalance = plnBalance.TotalBalance + bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newSolaBalance);
-                            //Update bill SQL
-                            bill.VirtualAccount = input.VirtualAccount;
-                            bill.BalanceId = customerBalance.Id;
-                            bill.PaymentStatus = "Paid";
-                            context.Bills.Update(bill);
-                            await context.SaveChangesAsync();
+                        var newSolaBalance = new Balance
+                        {
+                            UserId = plnBalance.UserId,
+                            AccountNumber = plnBalance.AccountNumber,
+                            TotalBalance = plnBalance.TotalBalance + bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newSolaBalance);
+                        //Update bill SQL
+                        bill.VirtualAccount = input.VirtualAccount;
+                        bill.BalanceId = customerBalance.Id;
+                        bill.PaymentStatus = "Paid";
+                        context.Bills.Update(bill);
+                        await context.SaveChangesAsync();
 
-                            return await Task.FromResult(new TransactionStatus
-                            (
-                                true, "Bill Succesfully Paid!"
-                            ));
-                        }
-                       return await Task.FromResult(new TransactionStatus
-                       (
-                          false, "Balance Insufficient!"
-                       ));
-                    }
-                    if (input.Type == "Credit")
-                    {
-                        //
+                        return await Task.FromResult(new TransactionStatus
+                        (
+                            true, "Bill Succesfully Paid!"
+                        ));
                     }
                     return await Task.FromResult(new TransactionStatus
                     (
-                        false, "Virtual Account Invalid!"
+                       false, "Balance Insufficient!"
                     ));
+                }
+                if (input.Type == "Credit")
+                {
+                    double custLimit = customerCredit.Limit - customerCredit.TotalCredit;//check current limit
+                    if (custLimit >= bill.TotalBill)
+                    {
+                        var newTransaction = new Transaction
+                        {
+                            CreditId = customerCredit.Id,
+                            SenderBalanceId = customerBalance.Id,
+                            RecipientBalanceId = plnBalance.Id,
+                            BillId = bill.Id,
+                            Total = bill.TotalBill,
+                            TransactionDate = DateTime.Now,
+                            Description = "Payment for Water Bill",
+                        };
+                        context.Transactions.Add(newTransaction);
 
+                        var newCustCredit = new Credit
+                        {
+                            UserId = customerCredit.UserId,
+                            CreditNumber = customerCredit.CreditNumber,
+                            TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
+                            TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Credits.Add(newCustCredit);
+
+                        var newPlnBalance = new Balance
+                        {
+                            UserId = plnBalance.UserId,
+                            AccountNumber = plnBalance.AccountNumber,
+                            TotalBalance = plnBalance.TotalBalance + bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newPlnBalance);
+
+                        //Update bill SQL
+                        bill.CreditId = customerCredit.Id;
+                        bill.PaymentStatus = "Paid";
+                        context.Bills.Update(bill);
+                        await context.SaveChangesAsync();
+
+                        return await Task.FromResult(new TransactionStatus
+                        (
+                            true, "Bill Succesfully Paid!"
+                        ));
+                    }
+                    return await Task.FromResult(new TransactionStatus
+                        (
+                            false, "Credit Denied!"
+                        ));
                 }
             }
             return await Task.FromResult(new TransactionStatus
@@ -298,7 +420,7 @@ namespace PaymentService.GraphQL
                 ));
         }
 
-        [Authorize(Roles = new[] { "CUSTOMER" })]
+        [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionStatus> PayWaterAsync(
             BillPayment input,
             [Service] ClaimsPrincipal claimsPrincipal,
@@ -311,100 +433,114 @@ namespace PaymentService.GraphQL
             var pdam = context.Users.Where(o => o.Username.Contains("PDAM")).FirstOrDefault();
             var pdamBalance = context.Balances.Where(o => o.UserId == pdam.Id).OrderBy(o => o.Id).LastOrDefault();
 
-            var bill = context.Bills.Where(o => o.PaymentStatus == "Unpaid" && o.VirtualAccount.Contains("080")).FirstOrDefault();//Sample
+            var bill = context.Bills.Where(o => o.PaymentStatus == "Unpaid" && o.VirtualAccount == input.VirtualAccount).FirstOrDefault();//Sample
             if (bill != null)
             {
-                if (bill.VirtualAccount == input.VirtualAccount)
+                if (input.Type == "Balance")
                 {
-                    if (input.Type == "Balance")
+                    if (customerBalance.TotalBalance >= bill.TotalBill)
                     {
-                        if (customerBalance.TotalBalance >= bill.TotalBill)
+                        var newTransaction = new Transaction
                         {
-                            var newTransaction = new Transaction
-                            {
-                                CreditId = customerCredit.Id,
-                                SenderBalanceId = customerBalance.Id,
-                                RecipientBalanceId = pdamBalance.Id,
-                                BillId = bill.Id,
-                                Total = bill.TotalBill,
-                                TransactionDate = DateTime.Now,
-                                Description = "Payment for Water Bill",
-                            };
-                            context.Transactions.Add(newTransaction);
+                            CreditId = customerCredit.Id,
+                            SenderBalanceId = customerBalance.Id,
+                            RecipientBalanceId = pdamBalance.Id,
+                            BillId = bill.Id,
+                            Total = bill.TotalBill,
+                            TransactionDate = DateTime.Now,
+                            Description = "Payment for Water Bill",
+                        };
+                        context.Transactions.Add(newTransaction);
 
-                            var newCustBalance = new Balance
-                            {
-                                UserId = customerBalance.UserId,
-                                AccountNumber = customerBalance.AccountNumber,
-                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newCustBalance);
+                        var newCustBalance = new Balance
+                        {
+                            UserId = customerBalance.UserId,
+                            AccountNumber = customerBalance.AccountNumber,
+                            TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newCustBalance);
 
-                            var newSolaBalance = new Balance
-                            {
-                                UserId = pdamBalance.UserId,
-                                AccountNumber = pdamBalance.AccountNumber,
-                                TotalBalance = pdamBalance.TotalBalance + bill.TotalBill,
-                                CreatedDate = DateTime.Now
-                            };
-                            context.Balances.Add(newSolaBalance);
-                            //Update bill SQL
-                            bill.VirtualAccount = input.VirtualAccount;
-                            bill.BalanceId = customerBalance.Id;
-                            bill.PaymentStatus = "Paid";
-                            context.Bills.Update(bill);
-                            await context.SaveChangesAsync();
+                        var newPdamBalance = new Balance
+                        {
+                            UserId = pdamBalance.UserId,
+                            AccountNumber = pdamBalance.AccountNumber,
+                            TotalBalance = pdamBalance.TotalBalance + bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newPdamBalance);
+                        //Update bill SQL
+                        bill.BalanceId = customerBalance.Id;
+                        bill.PaymentStatus = "Paid";
+                        context.Bills.Update(bill);
+                        await context.SaveChangesAsync();
 
-                            return await Task.FromResult(new TransactionStatus
-                            (
-                                true, "Bill Succesfully Paid!"
-                            ));
-                        }
                         return await Task.FromResult(new TransactionStatus
-                           (
-                              false, "Balance Insufficient!"
-                           ));
-                    }
-                    if (input.Type == "Credit")
-                    {
-                        //
+                        (
+                            true, "Bill Succesfully Paid!"
+                        ));
                     }
                     return await Task.FromResult(new TransactionStatus
-                    (
-                        false, "Virtual Account Invalid!"
-                    ));
+                       (
+                          false, "Balance Insufficient!"
+                       ));
+                }
+                if (input.Type == "Credit")
+                {
+                    double custLimit = customerCredit.Limit - customerCredit.TotalCredit;//check current limit
+                    if (custLimit >= bill.TotalBill)
+                    {
+                        var newTransaction = new Transaction
+                        {
+                            CreditId = customerCredit.Id,
+                            SenderBalanceId = customerBalance.Id,
+                            RecipientBalanceId = pdamBalance.Id,
+                            BillId = bill.Id,
+                            Total = bill.TotalBill,
+                            TransactionDate = DateTime.Now,
+                            Description = "Payment for Water Bill",
+                        };
+                        context.Transactions.Add(newTransaction);
 
+                        var newCustCredit = new Credit
+                        {
+                            UserId = customerCredit.UserId,
+                            CreditNumber = customerCredit.CreditNumber,
+                            TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
+                            TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Credits.Add(newCustCredit);
+
+                        var newPdamBalance = new Balance
+                        {
+                            UserId = pdamBalance.UserId,
+                            AccountNumber = pdamBalance.AccountNumber,
+                            TotalBalance = pdamBalance.TotalBalance + bill.TotalBill,
+                            CreatedDate = DateTime.Now
+                        };
+                        context.Balances.Add(newPdamBalance);
+
+                        //Update bill SQL
+                        bill.CreditId = customerCredit.Id;
+                        bill.PaymentStatus = "Paid";
+                        context.Bills.Update(bill);
+                        await context.SaveChangesAsync();
+
+                        return await Task.FromResult(new TransactionStatus
+                        (
+                            true, "Bill Succesfully Paid!"
+                        ));
+                    }
+                    return await Task.FromResult(new TransactionStatus
+                        (
+                            false, "Credit Denied!"
+                        ));
                 }
             }
             return await Task.FromResult(new TransactionStatus
                 (
                     false, "Water Bill not Found!"
-                ));
-        }
-
-        [Authorize(Roles = new[] { "CUSTOMER" })]
-        public async Task<TransactionStatus> CreateBillAsync(
-            BillPayment input,
-            [Service] ClaimsPrincipal claimsPrincipal,
-            [Service] BankDotnetDbContext context)
-        {
-            var userName = claimsPrincipal.Identity.Name;
-            var user = context.Users.Where(o => o.Username == userName && (o.Username.Contains("PLN") || o.Username.Contains("PDAM"))).FirstOrDefault();
-            if (user != null)
-            {
-                if (user.Username.Contains("PLN"))
-                {
-
-                }
-                if (user.Username.Contains("PDAM"))
-                {
-
-                }
-            }
-            return await Task.FromResult(new TransactionStatus
-                (
-                    false, "User not Found!"
                 ));
         }
     }
