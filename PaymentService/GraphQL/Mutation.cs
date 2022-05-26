@@ -75,7 +75,8 @@ namespace PaymentService.GraphQL
                             {
                                 VirtualAccount = bill.VirtualAccount,
                                 Bills = bill.TotalBill,
-                                PaymentStatus = bill.PaymentStatus
+                                PaymentStatus = bill.PaymentStatus,
+                                TransactionId = bill.BillTransactionId
                             };
                             var key = "Payment-Status-" + DateTime.Now.ToString();
                             var val = JsonConvert.SerializeObject(sendPaymentStatus);
@@ -114,7 +115,6 @@ namespace PaymentService.GraphQL
                                 UserId = customerCredit.UserId,
                                 CreditNumber = customerCredit.CreditNumber,
                                 TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
-                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
                                 CreatedDate = DateTime.Now
                             };
                             context.Credits.Add(newCustCredit);
@@ -133,6 +133,19 @@ namespace PaymentService.GraphQL
                             bill.PaymentStatus = "Paid";
                             context.Bills.Update(bill);
                             await context.SaveChangesAsync();
+                            //send kafka
+                            var sendPaymentStatus = new SendPaymentStatus
+                            {
+                                VirtualAccount = bill.VirtualAccount,
+                                Bills = bill.TotalBill,
+                                PaymentStatus = bill.PaymentStatus,
+                                TransactionId = bill.BillTransactionId
+                            };
+                            var key = "Payment-Status-" + DateTime.Now.ToString();
+                            var val = JsonConvert.SerializeObject(sendPaymentStatus);
+                            Console.WriteLine("====Sending Payment Status====");
+                            await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                            Console.WriteLine("====Payment Status Sent====");
 
                             return await Task.FromResult(new TransactionStatus
                             (
@@ -218,7 +231,8 @@ namespace PaymentService.GraphQL
                             {
                                 VirtualAccount = bill.VirtualAccount,
                                 Bills = bill.TotalBill,
-                                PaymentStatus = bill.PaymentStatus
+                                PaymentStatus = bill.PaymentStatus,
+                                TransactionId = bill.BillTransactionId
                             };
                             var key = "Payment-Status-" + DateTime.Now.ToString();
                             var val = JsonConvert.SerializeObject(sendPaymentStatus);
@@ -257,7 +271,6 @@ namespace PaymentService.GraphQL
                                 UserId = customerCredit.UserId,
                                 CreditNumber = customerCredit.CreditNumber,
                                 TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
-                                TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
                                 CreatedDate = DateTime.Now
                             };
                             context.Credits.Add(newCustCredit);
@@ -276,6 +289,19 @@ namespace PaymentService.GraphQL
                             bill.PaymentStatus = "Paid";
                             context.Bills.Update(bill);
                             await context.SaveChangesAsync();
+                            //send kafka
+                            var sendPaymentStatus = new SendPaymentStatus
+                            {
+                                VirtualAccount = bill.VirtualAccount,
+                                Bills = bill.TotalBill,
+                                PaymentStatus = bill.PaymentStatus,
+                                TransactionId = bill.BillTransactionId
+                            };
+                            var key = "Payment-Status-" + DateTime.Now.ToString();
+                            var val = JsonConvert.SerializeObject(sendPaymentStatus);
+                            Console.WriteLine("====Sending Payment Status====");
+                            await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                            Console.WriteLine("====Payment Status Sent====");
 
                             return await Task.FromResult(new TransactionStatus
                             (
@@ -383,7 +409,6 @@ namespace PaymentService.GraphQL
                             UserId = customerCredit.UserId,
                             CreditNumber = customerCredit.CreditNumber,
                             TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
-                            TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
                             CreatedDate = DateTime.Now
                         };
                         context.Credits.Add(newCustCredit);
@@ -507,7 +532,6 @@ namespace PaymentService.GraphQL
                             UserId = customerCredit.UserId,
                             CreditNumber = customerCredit.CreditNumber,
                             TotalCredit = customerCredit.TotalCredit + bill.TotalBill,
-                            TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
                             CreatedDate = DateTime.Now
                         };
                         context.Credits.Add(newCustCredit);
