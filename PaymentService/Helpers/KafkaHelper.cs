@@ -2,6 +2,7 @@
 using Confluent.Kafka.Admin;
 using Database.Models;
 using Newtonsoft.Json;
+using PaymentService.GraphQL;
 using PaymentService.Settings;
 using System.Net;
 
@@ -9,7 +10,7 @@ namespace PaymentService.Helpers
 {
     public class KafkaHelper
     {
-        public static async Task<bool> AcceptBills(KafkaSetting settings, BankDotnetDbContext context)
+        public static async Task<int> AcceptBills(KafkaSettings settings, BankDotnetDbContext context)
         {
             var Serverconfig = new ConsumerConfig
             {
@@ -23,6 +24,7 @@ namespace PaymentService.Helpers
                 e.Cancel = true;
                 cts.Cancel();
             };
+            var billId = 0;
             using (var consumer = new ConsumerBuilder<string, string>(Serverconfig).Build())
             {
                 var topics = new string[] { "BankTravika", "BankSolaka" };
@@ -36,17 +38,30 @@ namespace PaymentService.Helpers
                         Console.WriteLine($"Consumed record with key: {cr.Message.Key} and value: {cr.Message.Value}");
                         if (cr.Topic == "BankTravika")
                         {
-                            Bill bill = JsonConvert.DeserializeObject<Bill>(cr.Message.Value);
-                            bill.PaymentStatus = "Accepted";
+                            ReceiveBill receiveBill = JsonConvert.DeserializeObject<ReceiveBill>(cr.Message.Value);
+                            var bill = new Bill
+                            {
+                                VirtualAccount = receiveBill.Virtualaccount,
+                                TotalBill = Convert.ToDouble(receiveBill.Bills),
+                                PaymentStatus = "Accepted"
+                            };
                             context.Bills.Add(bill);
+                            await context.SaveChangesAsync();
+                            billId = bill.Id;
                         }
                         if(cr.Topic == "BankSolaka")
                         {
-                            Bill bill = JsonConvert.DeserializeObject<Bill>(cr.Message.Value);
-                            bill.PaymentStatus = "Accepted";
+                            ReceiveBill receiveBill = JsonConvert.DeserializeObject<ReceiveBill>(cr.Message.Value);
+                            var bill = new Bill
+                            {
+                                VirtualAccount = receiveBill.Virtualaccount,
+                                TotalBill = Convert.ToDouble(receiveBill.Bills),
+                                PaymentStatus = "Accepted"
+                            };
                             context.Bills.Add(bill);
+                            await context.SaveChangesAsync();
+                            billId = bill.Id;
                         }
-                        await context.SaveChangesAsync();
                         Console.WriteLine("=========Bill Saved Into Database=========");
                         Console.WriteLine("=========Bill Accepted==========");
                     }
@@ -60,10 +75,10 @@ namespace PaymentService.Helpers
                     consumer.Close();
                 }
             }
-            return await Task.FromResult(true);
+            return await Task.FromResult(billId);
         }
 
-        public static async Task<bool> SendPaymentStatus(KafkaSetting settings, string topic, string key, string val)
+        public static async Task<bool> SendPaymentStatus(KafkaSettings settings, string topic, string key, string val)
         {
             var succeed = false;
             var config = new ProducerConfig
@@ -114,7 +129,6 @@ namespace PaymentService.Helpers
                 });
                 producer.Flush(TimeSpan.FromSeconds(10));
             }
-
             return await Task.FromResult(succeed);
         }
     }
