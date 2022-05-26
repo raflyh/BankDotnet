@@ -38,6 +38,7 @@ namespace BalanceService.GraphQL
                 Message = $"Data Nasabah Dengan No Rekening : {nasabah.AccountNumber} Tidak Ditemukan",
             };
         }
+
         [Authorize(Roles = new[] { "CUSTOMER SERVICE" })]
         public async Task<TransferOutput> AddTransferWithCSAsync(
             TransferBalance input,
@@ -109,6 +110,7 @@ namespace BalanceService.GraphQL
                 };
             }
         }
+
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransferOutput> AddTransferAsync(
             TransferBalance input,
@@ -180,6 +182,7 @@ namespace BalanceService.GraphQL
                 };
             }
         }
+
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TopupOutput> AddRedeemCodeAsync(
             TopupOpo input,
@@ -228,5 +231,83 @@ namespace BalanceService.GraphQL
 
             return await Task.FromResult(resp);
         }
+
+        [Authorize(Roles = new[] { "NASABAH" })]
+        public async Task<TransactionOutput> PaymentOpoAsync(
+            BillPayment input,
+            [Service] BankDotnetDbContext context, ClaimsPrincipal claimsPrincipal)
+        {
+            var userName = claimsPrincipal.Identity.Name;
+            var opo = context.Users.Where(o => o.Username.Contains("OPO")).FirstOrDefault();
+            var customer = context.Users.Where(o => o.Username == userName).FirstOrDefault();
+            var customerBalance = context.Balances.Where(o => o.UserId == customer.Id).OrderBy(o => o.Id).LastOrDefault();
+            var customerCredit = context.Credits.Where(o => o.UserId == customer.Id).OrderBy(o => o.Id).LastOrDefault();
+            var opoBalance = context.Balances.Where(o => o.UserId == opo.Id).OrderBy(o => o.Id).LastOrDefault();
+            
+            var bill = context.Bills.Where(o => o.PaymentStatus != "Paid" && o.Type == "Pembayaran OPO").FirstOrDefault();//Sample
+
+            if (bill.VirtualAccount == input.VirtualAccount)
+            {
+                if (customerBalance.TotalBalance >= bill.TotalBill)
+                {
+                    var newTransaction = new Transaction
+                    {
+                        CreditId = customerCredit.Id,
+                        SenderBalanceId = customerBalance.Id,
+                        RecipientBalanceId = opoBalance.Id,
+                        BillId = bill.Id,
+                        Total = bill.TotalBill,
+                        TransactionDate = DateTime.Now,
+                        Description = "Payment for Electric Bill",
+                    };
+                    context.Transactions.Add(newTransaction);
+
+                    var newCustBalance = new Balance
+                    {
+                        UserId = customerBalance.UserId,
+                        AccountNumber = customerBalance.AccountNumber,
+                        TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
+                        CreatedDate = DateTime.Now
+                    };
+                    context.Balances.Add(newCustBalance);
+
+                    var newSolaBalance = new Balance
+                    {
+                        UserId = opoBalance.UserId,
+                        AccountNumber = opoBalance.AccountNumber,
+                        TotalBalance = opoBalance.TotalBalance + bill.TotalBill,
+                        CreatedDate = DateTime.Now
+                    };
+                    context.Balances.Add(newSolaBalance);
+
+                    bill.VirtualAccount = input.VirtualAccount;
+                    bill.BalanceId = customerBalance.Id;
+                    bill.PaymentStatus = "Paid";
+                    context.Bills.Update(bill);
+                    await context.SaveChangesAsync();
+
+                    return new TransactionOutput
+                    {
+                        Message = "Pembayaran Berhasil",
+                        Status = true,
+                        TransactionDate = DateTime.Now.ToString(),
+                    };
+                }
+                return new TransactionOutput
+                {
+                    Message = "Pembayaran Gagal",
+                    Status = false,
+                    TransactionDate = DateTime.Now.ToString(),
+                };
+
+            }
+            return new TransactionOutput
+            {
+                Message = "Pembayaran Gagal",
+                Status = false,
+                TransactionDate = DateTime.Now.ToString(),
+            };
+        }
+
     }
 }
