@@ -109,6 +109,7 @@ namespace BalanceService.GraphQL
                 };
             }
         }
+
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TopupOutput> AddRedeemCodeAsync(
             TopupOpo input,
@@ -142,6 +143,6 @@ namespace BalanceService.GraphQL
                 resp.Message = "Failed to submit data";
             return await Task.FromResult(resp);
             
-        }
+        //}
     }
 }
