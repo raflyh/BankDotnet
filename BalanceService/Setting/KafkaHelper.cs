@@ -1,5 +1,8 @@
-﻿using Confluent.Kafka;
+﻿using BalanceService.GraphQL;
+using Confluent.Kafka;
 using Confluent.Kafka.Admin;
+using Database.Models;
+using Newtonsoft.Json;
 using System.Net;
 
 namespace BalanceService.Setting
@@ -7,6 +10,67 @@ namespace BalanceService.Setting
     public class KafkaHelper
     {
         /*--------------------------------------------- KAFKA SETTING ------------------------------------------------*/
+        public static async Task<int> AcceptBills(KafkaSettings settings, BankDotnetDbContext context)
+        {
+            var Serverconfig = new ConsumerConfig
+            {
+                BootstrapServers = settings.Server,
+                GroupId = "Batch2",
+                AutoOffsetReset = AutoOffsetReset.Earliest
+            };
+            CancellationTokenSource cts = new CancellationTokenSource();
+            Console.CancelKeyPress += (_, e) =>
+            {
+                e.Cancel = true;
+                cts.Cancel();
+            };
+            var topics = "simpleOrder";
+
+            var billId = 0;
+            using (var consumer = new ConsumerBuilder<string, string>(Serverconfig).Build())
+            {
+                /*string[] topic = { "BankTravika", "BankSolaka", "BankOpo" };
+                foreach (string i in topic)
+                {
+                    consumer.Subscribe(topic);
+                }*/
+                Console.WriteLine("==============Accepting Bills================");
+                consumer.Subscribe(topics);
+                try
+                {
+                    while (true)
+                    {
+                        var cr = consumer.Consume(cts.Token);
+                        Console.WriteLine($"Consumed record with key: {cr.Message.Key} and value: {cr.Message.Value}");
+                       
+                            ReceiveKafkaBill receiveKafkaBill = JsonConvert.DeserializeObject<ReceiveKafkaBill>(cr.Message.Value);
+                            Bill bill = new Bill();
+                            bill.VirtualAccount = receiveKafkaBill.Virtualaccount;
+                            bill.TotalBill = Convert.ToInt32(receiveKafkaBill.Bills);
+                            bill.PaymentStatus = receiveKafkaBill.PaymentStatus;
+                            bill.Type = "Pembayaran OPO";
+                            bill.BillTransactionId = Convert.ToInt32(receiveKafkaBill.Virtualaccount);
+
+                            context.Bills.Add(bill);
+                            context.SaveChanges();
+                            await context.SaveChangesAsync();
+                            billId = bill.Id;
+                        
+                        Console.WriteLine("=========Bill Saved Into Database=========");
+                        Console.WriteLine("=========Bill Accepted==========");
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Ctrl-C was pressed.
+                }
+                finally
+                {
+                    consumer.Close();
+                }
+            }
+            return await Task.FromResult(billId);
+        }
         /*Console.WriteLine("-------Kafka-------");
 
         var config = new ConsumerConfig

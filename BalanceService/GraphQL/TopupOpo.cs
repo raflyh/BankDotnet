@@ -3,6 +3,6 @@
     public class TopupOpo
     {
         public string? Code { get; set; }
-        public int Amount { get; set; }
+        public double Amount { get; set; }
     }
 }
