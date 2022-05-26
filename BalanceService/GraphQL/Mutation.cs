@@ -111,7 +111,7 @@ namespace BalanceService.GraphQL
             }
         }
 
-<<<<<<< HEAD
+
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransferOutput> AddTransferAsync(
             TransferBalance input,
@@ -184,8 +184,6 @@ namespace BalanceService.GraphQL
             }
         }
 
-=======
->>>>>>> ed7488d635834f8f46b563f7a71d0d0b9466216f
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TopupOutput> AddRedeemCodeAsync(
             TopupOpo input,
@@ -238,7 +236,6 @@ namespace BalanceService.GraphQL
             context.SaveChanges();
 
             return await Task.FromResult(resp);
-<<<<<<< HEAD
         }
 
         [Authorize(Roles = new[] { "NASABAH" })]
@@ -327,9 +324,5 @@ namespace BalanceService.GraphQL
             };
         }
 
-=======
-            
-        //}
->>>>>>> ed7488d635834f8f46b563f7a71d0d0b9466216f
     }
 }
