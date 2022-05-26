@@ -3,17 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32516.85
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserService", "UserService\UserService.csproj", "{1DA894D3-2E3F-4BFA-BF11-58C0A3308765}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UserService", "UserService\UserService.csproj", "{1DA894D3-2E3F-4BFA-BF11-58C0A3308765}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Database", "Database\Database.csproj", "{55A4BB87-EE1A-4B2B-8B12-DEDD6163C081}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Database", "Database\Database.csproj", "{55A4BB87-EE1A-4B2B-8B12-DEDD6163C081}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BalanceService", "BalanceService\BalanceService.csproj", "{F645C626-2232-4F5F-9220-1FB56AA3FC4D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BalanceService", "BalanceService\BalanceService.csproj", "{F645C626-2232-4F5F-9220-1FB56AA3FC4D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymentService", "PaymentService\PaymentService.csproj", "{778CFAED-1FD5-4150-A8A6-DE01D608C7EB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PaymentService", "PaymentService\PaymentService.csproj", "{778CFAED-1FD5-4150-A8A6-DE01D608C7EB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreditService", "CreditService\CreditService.csproj", "{D720FADE-362A-496C-A076-50E8436C8CB6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CreditService", "CreditService\CreditService.csproj", "{D720FADE-362A-496C-A076-50E8436C8CB6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavingService", "SavingService\SavingService.csproj", "{92D84196-0577-4E6A-B81F-1F476975635A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SavingService", "SavingService\SavingService.csproj", "{92D84196-0577-4E6A-B81F-1F476975635A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BillProcessor", "BillProcessor\BillProcessor.csproj", "{0F0F9D03-82B8-411F-826D-AAE8E4F92009}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{92D84196-0577-4E6A-B81F-1F476975635A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92D84196-0577-4E6A-B81F-1F476975635A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92D84196-0577-4E6A-B81F-1F476975635A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F0F9D03-82B8-411F-826D-AAE8E4F92009}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F0F9D03-82B8-411F-826D-AAE8E4F92009}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F0F9D03-82B8-411F-826D-AAE8E4F92009}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F0F9D03-82B8-411F-826D-AAE8E4F92009}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
