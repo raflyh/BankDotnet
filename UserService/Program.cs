@@ -7,14 +7,14 @@ using UserService.Setting;
 using UserService.GraphQL;
 
 
-// set ContentRootPath so that builder.Host.UseWindowsService() doesn 't crash when running as a service
-//var webApplicationOptions = new WebApplicationOptions()
-//{
-//    ContentRootPath = AppContext.BaseDirectory,
-//    Args = args
-//};
+//set ContentRootPath so that builder.Host.UseWindowsService() doesn 't crash when running as a service
+var webApplicationOptions = new WebApplicationOptions()
+{
+    ContentRootPath = AppContext.BaseDirectory,
+    Args = args
+};
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(webApplicationOptions);
 
 var conString = builder.Configuration.GetConnectionString("MyDatabase");
 builder.Services.AddDbContext<BankDotnetDbContext>(options =>
