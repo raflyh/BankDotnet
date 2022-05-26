@@ -17,7 +17,6 @@ namespace Database.Models
         public DateTime CreatedDate { get; set; }
         public DateTime DueDate { get; set; }
         public double TotalCredit { get; set; }
-        public double TotalBalance { get; set; }
         public string CreditNumber { get; set; } = null!;
 
         public virtual User User { get; set; } = null!;

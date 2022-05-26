@@ -321,5 +321,47 @@ namespace UserService.GraphQL
             }
             return await Task.FromResult(user);
         }
+
+        [Authorize(Roles = new[] { "NASABAH" })]
+        public async Task<Bill> CreateBillAsync(
+            BillPayment input,
+            ClaimsPrincipal claimsPrincipal,
+            [Service] BankDotnetDbContext context)
+        {
+            var userName = claimsPrincipal.Identity.Name;
+            var user = context.Users.Where(o => o.Username == userName)
+                .Include(b=>b.Balances).Include(c=>c.Credits).FirstOrDefault();
+
+            if (user != null)
+            {
+                Random rnd = new Random();
+                var random = Convert.ToString(rnd.Next(1000000000, 2000000000));
+                if (user.Username.Contains("PLN"))
+                {
+                    var newBill = new Bill
+                    {
+                        VirtualAccount = "007" + $"{random}",
+                        TotalBill = input.TotalBill,
+                        PaymentStatus = input.PaymentStatus,
+                    };
+                    var ret = context.Bills.Add(newBill);
+                    await context.SaveChangesAsync();
+                    return await Task.FromResult(newBill);
+                }
+                if (user.Username.Contains("PDAM"))
+                {
+                    var newBill = new Bill
+                    {
+                        VirtualAccount = "008" + $"{random}",
+                        TotalBill = input.TotalBill,
+                        PaymentStatus = input.PaymentStatus,
+                    };
+                    var ret = context.Bills.Add(newBill);
+                    await context.SaveChangesAsync();
+                    return await Task.FromResult(newBill);
+                }
+            }
+            return new Bill();
+        }
     }
 }
