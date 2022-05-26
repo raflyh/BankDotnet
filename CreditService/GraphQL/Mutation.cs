@@ -78,45 +78,6 @@ namespace CreditService.GraphQL
         }
         
         [Authorize(Roles = new[] { "NASABAH" })]
-        public async Task<CreditOutput> AddPaymentWithCreditAsync(
-            PaymentWithCredit input,
-            [Service] BankDotnetDbContext context,
-            ClaimsPrincipal claimsPrincipal)
-        {
-            var username = claimsPrincipal.Identity.Name;
-            var user = context.Users.Where(o => o.Username == username).FirstOrDefault();
-            var balance = context.Balances.Where(a => a.UserId == user.Id).FirstOrDefault();
-            var credit = context.Credits.Where(a => a.UserId == user.Id).FirstOrDefault();
-
-            if (credit != null)
-            {
-                if(credit.Limit > (credit.TotalCredit + input.amountCredit))
-                {
-                    credit.TotalCredit = credit.TotalCredit + input.amountCredit;
-                    
-                    context.Credits.Update(credit);
-
-                    await context.SaveChangesAsync();
-                    return new CreditOutput
-                    {
-                        TransactionDate = DateTime.Now.ToString(),
-                        Message = "Payment with Credit already succeed.",
-                        CreditNumber = credit.CreditNumber
-                    };
-                }
-                return new CreditOutput 
-                { 
-                    TransactionDate = DateTime.Now.ToString(),
-                    Message = "Payment with Credit failed"
-                };
-            }
-            return new CreditOutput
-            {
-                TransactionDate = DateTime.Now.ToString(),
-                Message = "Payment with Credit failed"
-            };
-
-        }
         public async Task<CreditOutput> PaydebtCreditAsync(
             PaymentWithCredit input,
             [Service] BankDotnetDbContext context,
@@ -128,12 +89,12 @@ namespace CreditService.GraphQL
             var credit = context.Credits.Where(a => a.UserId == user.Id).FirstOrDefault();
 
             TimeSpan result = DateTime.Now.Subtract(credit.DueDate);
-            
-            
+
+
             if (credit != null)
             {
                 using var transaction = context.Database.BeginTransaction();
-                try 
+                try
                 {
                     if (balance.TotalBalance > input.amountCredit)
                     {
@@ -182,5 +143,45 @@ namespace CreditService.GraphQL
             };
 
         }
+        //public async Task<CreditOutput> AddPaymentWithCreditAsync(
+        //    PaymentWithCredit input,
+        //    [Service] BankDotnetDbContext context,
+        //    ClaimsPrincipal claimsPrincipal)
+        //{
+        //    var username = claimsPrincipal.Identity.Name;
+        //    var user = context.Users.Where(o => o.Username == username).FirstOrDefault();
+        //    var balance = context.Balances.Where(a => a.UserId == user.Id).FirstOrDefault();
+        //    var credit = context.Credits.Where(a => a.UserId == user.Id).FirstOrDefault();
+
+        //    if (credit != null)
+        //    {
+        //        if(credit.Limit > (credit.TotalCredit + input.amountCredit))
+        //        {
+        //            credit.TotalCredit = credit.TotalCredit + input.amountCredit;
+
+        //            context.Credits.Update(credit);
+
+        //            await context.SaveChangesAsync();
+        //            return new CreditOutput
+        //            {
+        //                TransactionDate = DateTime.Now.ToString(),
+        //                Message = "Payment with Credit already succeed.",
+        //                CreditNumber = credit.CreditNumber
+        //            };
+        //        }
+        //        return new CreditOutput 
+        //        { 
+        //            TransactionDate = DateTime.Now.ToString(),
+        //            Message = "Payment with Credit failed"
+        //        };
+        //    }
+        //    return new CreditOutput
+        //    {
+        //        TransactionDate = DateTime.Now.ToString(),
+        //        Message = "Payment with Credit failed"
+        //    };
+
+        //}
+
     }
 }
