@@ -43,7 +43,8 @@ namespace PaymentService.Helpers
                             {
                                 VirtualAccount = receiveBill.Virtualaccount,
                                 TotalBill = Convert.ToDouble(receiveBill.Bills),
-                                PaymentStatus = "Accepted"
+                                PaymentStatus = "Accepted",
+                                BillTransactionId = receiveBill.TransactionId
                             };
                             context.Bills.Add(bill);
                             await context.SaveChangesAsync();
@@ -56,7 +57,8 @@ namespace PaymentService.Helpers
                             {
                                 VirtualAccount = receiveBill.Virtualaccount,
                                 TotalBill = Convert.ToDouble(receiveBill.Bills),
-                                PaymentStatus = "Accepted"
+                                PaymentStatus = "Accepted",
+                                BillTransactionId = receiveBill.TransactionId
                             };
                             context.Bills.Add(bill);
                             await context.SaveChangesAsync();
