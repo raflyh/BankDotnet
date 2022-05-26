@@ -60,5 +60,10 @@ namespace BalanceService.Setting
 
             return await Task.FromResult(succeed);
         }
+
+        internal static Task SendMessage(object value, string v, string key, string val)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

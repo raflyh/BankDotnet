@@ -240,7 +240,7 @@ namespace BalanceService.GraphQL
         [Authorize(Roles = new[] { "NASABAH" })]
         public async Task<TransactionOutput> PaymentOpoAsync(
             BillPayment input,
-            [Service] BankDotnetDbContext context, ClaimsPrincipal claimsPrincipal)
+            [Service] BankDotnetDbContext context, ClaimsPrincipal claimsPrincipal, [Service] IOptions<KafkaSettings> settings)
         {
             var userName = claimsPrincipal.Identity.Name;
             var opo = context.Users.Where(o => o.Username.Contains("OPO")).FirstOrDefault();
@@ -250,20 +250,27 @@ namespace BalanceService.GraphQL
             var opoBalance = context.Balances.Where(o => o.UserId == opo.Id).FirstOrDefault();
             
             var bill = context.Bills.Where(o => o.PaymentStatus != "Paid" && o.Type == "Pembayaran OPO").FirstOrDefault();//Sample
-
+            if (bill == null)
+            {
+                return new TransactionOutput
+                {
+                    Message = "Pembayaran Gagal",
+                    Status = false,
+                    TransactionDate = DateTime.Now.ToString(),
+                };
+            }
             if (bill.VirtualAccount == input.VirtualAccount)
             {
                 if (customerBalance.TotalBalance >= bill.TotalBill)
                 {
                     var newTransaction = new Transaction
                     {
-                        CreditId = customerCredit.Id,
                         SenderBalanceId = customerBalance.Id,
                         RecipientBalanceId = opoBalance.Id,
                         BillId = bill.Id,
                         Total = bill.TotalBill,
                         TransactionDate = DateTime.Now,
-                        Description = "Payment for Electric Bill",
+                        Description = "OPO Payment for Electric Bill",
                     };
                     context.Transactions.Add(newTransaction);
 
@@ -278,6 +285,20 @@ namespace BalanceService.GraphQL
                     bill.PaymentStatus = "Paid";
                     context.Bills.Update(bill);
                     await context.SaveChangesAsync();
+
+                    var sendBill = context.Bills.Where(s => s.VirtualAccount == input.VirtualAccount).FirstOrDefault();
+                    var recive = new SendKafkaBill
+                    {
+                        Virtualaccount = input.VirtualAccount,
+                        TransactionId = sendBill.BillTransactionId,
+                        Bills = sendBill.TotalBill.ToString(),
+                        PaymentStatus = sendBill.PaymentStatus
+                    };
+                    //send kafka
+                    var dts = DateTime.Now.ToString();
+                    var key = "RedeemCode-" + dts;
+                    var val = JObject.FromObject(recive).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
+                    var result = await KafkaHelper.SendMessage(settings.Value, "simpleOrder", key, val);
 
                     return new TransactionOutput
                     {

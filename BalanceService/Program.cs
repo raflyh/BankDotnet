@@ -39,8 +39,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("KafkaSettings"));
  
+var app = builder.Build();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapGraphQL();
+app.MapGet("/", () => "Hello World!");
+
+app.Run();
 /*--------------------------------------------- KAFKA SETTING ------------------------------------------------*/
-Console.WriteLine("-------Kafka-------");
+/*Console.WriteLine("-------Kafka-------");
 
 var config = new ConsumerConfig
 {
@@ -76,7 +83,7 @@ using (var consumer = new ConsumerBuilder<string, string>(config).Build())
                 bill.VirtualAccount = receiveKafkaBill.Virtualaccount;
                 bill.TotalBill = Convert.ToDouble(receiveKafkaBill.Bills);
                 bill.PaymentStatus = receiveKafkaBill.PaymentStatus;
-                bill.Type= "Pembayaran OPO";
+                bill.Type = "Pembayaran OPO";
 
                 context.Bills.Add(bill);
                 context.SaveChanges();
@@ -92,14 +99,5 @@ using (var consumer = new ConsumerBuilder<string, string>(config).Build())
         consumer.Close();
     }
 
-}
+}*/
 /*--------------------------------------------- END ------------------------------------------------*/
-
-
-var app = builder.Build();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapGraphQL();
-app.MapGet("/", () => "Hello World!");
-
-app.Run();
