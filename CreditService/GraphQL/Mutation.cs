@@ -32,7 +32,7 @@ namespace CreditService.GraphQL
                     CreatedDate = DateTime.Now,
                     DueDate = DateTime.Now.AddMonths(1),
                     TotalCredit = 0,
-                    TotalBalance = saldo.TotalBalance, //pemanggilan totalBalance
+                    /*TotalBalance = saldo.TotalBalance,*/ //pemanggilan totalBalance
                     CreditNumber ="12" + $"{random}"
                 };
 
@@ -104,7 +104,7 @@ namespace CreditService.GraphQL
                         }
 
                         credit.TotalCredit = credit.TotalCredit - input.amountCredit;
-                        credit.TotalBalance = credit.TotalBalance - input.amountCredit;
+                        //credit.TotalBalance = credit.TotalBalance - input.amountCredit;
                         context.Credits.Update(credit);
                         context.SaveChanges();
 
