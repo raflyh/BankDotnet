@@ -1,6 +1,6 @@
 ﻿namespace PaymentService.Settings
 {
-    public class KafkaSetting
+    public class KafkaSettings
     {
         public string Server { get; set; }
         public int NumPartitions { get; set; }
