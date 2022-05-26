@@ -204,9 +204,9 @@ namespace BalanceService.GraphQL
             input.Amount = input.Amount;
             //send kafka
             var dts = DateTime.Now.ToString();
-            var key = "RedeemCOde-" + dts;
+            var key = "RedeemCode-" + dts;
             var val = JObject.FromObject(input).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
-            var result = await KafkaHelper.SendMessage(settings.Value, "Latihan4", key, val);
+            var result = await KafkaHelper.SendMessage(settings.Value, "simpleOrder", key, val);
             
             TopupOutput resp = new TopupOutput
             {
