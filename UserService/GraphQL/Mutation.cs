@@ -22,7 +22,15 @@ namespace UserService.GraphQL
             var user = context.Users.Where(o => o.Username == input.UserName).FirstOrDefault();
             if (user != null)
             {
-                return await Task.FromResult(new UserData());
+                return await Task.FromResult(new UserData
+                {
+                    Id = 0,
+                    Username = "User sudah Ada",
+                    FullName = "User sudah Ada",
+                    PhoneNumber = "User sudah Ada",
+                    Address = "User sudah Ada",
+                    CreatedDate = DateTime.Now,
+                });
             }
             var newUser = new User
             {
@@ -68,7 +76,15 @@ namespace UserService.GraphQL
             var user = context.Users.Where(o => o.Username == input.UserName).FirstOrDefault();
             if (user != null)
             {
-                return await Task.FromResult(new UserData());
+                return await Task.FromResult(new UserData
+                {
+                    Id = 0,
+                    Username = "User sudah Ada",
+                    FullName = "User sudah Ada",
+                    PhoneNumber = "User sudah Ada",
+                    Address = "User sudah Ada",
+                    CreatedDate = DateTime.Now,
+                });
             }
             var newUser = new User
             {
@@ -139,7 +155,15 @@ namespace UserService.GraphQL
             var user = context.Users.Where(o => o.Username == input.UserName).FirstOrDefault();
             if (user != null)
             {
-                return await Task.FromResult(new UserData());
+                return await Task.FromResult(new UserData
+                {
+                    Id = 0,
+                    Username = "User sudah Ada",
+                    FullName = "User sudah Ada",
+                    PhoneNumber = "User sudah Ada",
+                    Address = "User sudah Ada",
+                    CreatedDate = DateTime.Now,
+                });
             }
             var newUser = new User
             {
@@ -216,7 +240,7 @@ namespace UserService.GraphQL
                 var claims = new List<Claim>();
                 claims.Add(new Claim(ClaimTypes.Name, user.Username));
 
-                var userRoles = context.UserRoles.Where(o => o.Id == user.Id).ToList();
+                var userRoles = context.UserRoles.Where(o => o.UserId == user.Id).ToList();
                 foreach (var userRole in userRoles)
                 {
                     var role = context.Roles.Where(o => o.Id == userRole.RoleId).FirstOrDefault();
