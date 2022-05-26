@@ -109,6 +109,7 @@ namespace UserService.GraphQL
             {
                 BalanceId = balance.Id,
                 TotalSaving = 0,
+                TotalGold =0,
                 Date = DateTime.Now
             };
 
