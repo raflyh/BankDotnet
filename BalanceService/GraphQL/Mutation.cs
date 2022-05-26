@@ -218,6 +218,11 @@ namespace BalanceService.GraphQL
             };
             if (!result)
                 resp.Message = "Failed to submit data";
+
+            //update balance
+            balance.TotalBalance = balance.TotalBalance - input.Amount;
+            context.Balances.Update(balance);
+            context.SaveChanges();
             //add transaksi
             var transaksi = new Transaction
             {
@@ -242,7 +247,7 @@ namespace BalanceService.GraphQL
             var customer = context.Users.Where(o => o.Username == userName).FirstOrDefault();
             var customerBalance = context.Balances.Where(o => o.UserId == customer.Id).OrderBy(o => o.Id).LastOrDefault();
             var customerCredit = context.Credits.Where(o => o.UserId == customer.Id).OrderBy(o => o.Id).LastOrDefault();
-            var opoBalance = context.Balances.Where(o => o.UserId == opo.Id).OrderBy(o => o.Id).LastOrDefault();
+            var opoBalance = context.Balances.Where(o => o.UserId == opo.Id).FirstOrDefault();
             
             var bill = context.Bills.Where(o => o.PaymentStatus != "Paid" && o.Type == "Pembayaran OPO").FirstOrDefault();//Sample
 
@@ -262,23 +267,11 @@ namespace BalanceService.GraphQL
                     };
                     context.Transactions.Add(newTransaction);
 
-                    var newCustBalance = new Balance
-                    {
-                        UserId = customerBalance.UserId,
-                        AccountNumber = customerBalance.AccountNumber,
-                        TotalBalance = customerBalance.TotalBalance - bill.TotalBill,
-                        CreatedDate = DateTime.Now
-                    };
-                    context.Balances.Add(newCustBalance);
+                    customerBalance.TotalBalance = customerBalance.TotalBalance - bill.TotalBill;
+                    context.Balances.Update(customerBalance);
 
-                    var newSolaBalance = new Balance
-                    {
-                        UserId = opoBalance.UserId,
-                        AccountNumber = opoBalance.AccountNumber,
-                        TotalBalance = opoBalance.TotalBalance + bill.TotalBill,
-                        CreatedDate = DateTime.Now
-                    };
-                    context.Balances.Add(newSolaBalance);
+                    opoBalance.TotalBalance = opoBalance.TotalBalance + bill.TotalBill;
+                    context.Balances.Update(opoBalance);
 
                     bill.VirtualAccount = input.VirtualAccount;
                     bill.BalanceId = customerBalance.Id;
