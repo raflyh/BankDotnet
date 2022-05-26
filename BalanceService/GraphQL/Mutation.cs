@@ -16,7 +16,6 @@ namespace BalanceService.GraphQL
             BalanceInput input,
             [Service] BankDotnetDbContext context)
         {
-            // EF
             var nasabah = context.Balances.Where(x => x.AccountNumber == input.AccountNumber).FirstOrDefault();
             var user = context.Users.Where(o=>o.Id == nasabah.UserId).FirstOrDefault();
             if (nasabah != null)
@@ -44,7 +43,6 @@ namespace BalanceService.GraphQL
             TransferBalance input,
             [Service] BankDotnetDbContext context)
         {
-            // EF
             var recipient = context.Balances.Where(x => x.AccountNumber == input.RecipientAccountNumber).FirstOrDefault();
             var userRecipient = context.Users.Where(o => o.Id == recipient.UserId).FirstOrDefault();
             var sender = context.Balances.Where(s => s.AccountNumber == input.SenderAccountNumber).FirstOrDefault();
@@ -111,38 +109,39 @@ namespace BalanceService.GraphQL
                 };
             }
         }
-        //[Authorize(Roles = new[] { "NASABAH" })]
-        //public async Task<TopupOutput> AddRedeemCodeAsync(
-        //    TopupOpo input,
-        //    ClaimsPrincipal claimsPrincipal,
-        //    [Service] BankDotnetDbContext context, [Service] IOptions<KafkaSettings> settings)
-        //{
-        //    const string src = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        //    int length = 16;
-        //    var sb = new StringBuilder();
-        //    Random rdm = new Random();
-        //    for (var i = 0; i < length; i++)
-        //    {
-        //        var c = src[rdm.Next(0, src.Length)];
-        //        sb.Append(c);
-        //    }
-        //    Console.WriteLine(sb.ToString());
-        //    input.Code = sb.ToString();
-        //    input.Total = input.Total ;
 
-        //    var dts = DateTime.Now.ToString();
-        //    var key = "TOPUP-OPO-" + dts;
-        //    var val = JObject.FromObject(input).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
-        //    var result = await KafkaHelper.SendMessage(settings.Value, "Latihan4", key, val);
+        [Authorize(Roles = new[] { "NASABAH" })]
+        public async Task<TopupOutput> AddRedeemCodeAsync(
+            TopupOpo input,
+            ClaimsPrincipal claimsPrincipal,
+            [Service] BankDotnetDbContext context, [Service] IOptions<KafkaSettings> settings)
+        {
+            const string src = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            int length = 16;
+            var sb = new StringBuilder();
+            Random rdm = new Random();
+            for (var i = 0; i < length; i++)
+            {
+                var c = src[rdm.Next(0, src.Length)];
+                sb.Append(c);
+            }
+            Console.WriteLine(sb.ToString());
+            input.Code = sb.ToString();
+            input.Amount = input.Amount;
 
-        //    TopupOutput resp = new TopupOutput
-        //    {
-        //        TransactionDate = dts,
-        //        Message = "Topup Berhasil"
-        //    };
-        //    if (!result)
-        //        resp.Message = "Failed to submit data";
-        //    return await Task.FromResult(resp);
+            var dts = DateTime.Now.ToString();
+            var key = "TopupOPO-" + dts;
+            var val = JObject.FromObject(input).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
+            var result = await KafkaHelper.SendMessage(settings.Value, "Latihan4", key, val);
+
+            TopupOutput resp = new TopupOutput
+            {
+                TransactionDate = dts,
+                Message = "Create redeem code successful"
+            };
+            if (!result)
+                resp.Message = "Failed to submit data";
+            return await Task.FromResult(resp);
             
         //}
     }

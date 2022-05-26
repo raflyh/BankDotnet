@@ -1,4 +1,5 @@
-﻿namespace UserService.GraphQL { 
+﻿namespace UserService.GraphQL
+{ 
     public record LoginUser
     (
         string Username,
