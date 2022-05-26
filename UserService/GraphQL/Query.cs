@@ -19,7 +19,9 @@ namespace UserService.GraphQL
             {
                 if (adminRole.Value == "ADMIN")
                 {
+
                     return context.Users.Include(b=>b.Balances).Include(o => o.UserRoles).ThenInclude(r => r.Role).Select(p => new UserData()
+
                     {
                         Id = p.Id,
                         FullName = p.FullName,
@@ -45,19 +47,21 @@ namespace UserService.GraphQL
             return new List<UserData>().AsQueryable();
         }
 
+      
         [Authorize]
-        public IQueryable<UserRole> GetUserRoleNasabah([Service] BankDotnetDbContext context, ClaimsPrincipal claimsPrincipal)
+        public IQueryable<Role> GetUserRoleNasabah([Service] BankDotnetDbContext context, ClaimsPrincipal claimsPrincipal)
         {
             var adminRole = claimsPrincipal.Claims.Where(o => o.Type == ClaimTypes.Role).FirstOrDefault();
-            var users = context.UserRoles.Include(u => u.User).Include(r=>r.Role).Where(o => o.RoleId == 2);
+            var users = context.UserRoles.Include(u => u.User).Include(r => r.Role).Where(o => o.RoleId == 2);
             if (users != null)
             {
                 if (adminRole.Value == "MANAGER" || adminRole.Value == "ADMIN" || adminRole.Value == "CUSTOMER SERVICE")
                 {
-                    return users;
+                    return context.Roles.Include(r => r.UserRoles).Where(i => i.Id == 2)
+                        .Include(a => a.UserRoles).ThenInclude(u => u.User).ThenInclude(b => b.Balances);
                 }
             }
-            return new List<UserRole>().AsQueryable();
+            return new List<Role>().AsQueryable();
         }
 
     }
