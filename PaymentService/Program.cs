@@ -13,6 +13,9 @@ builder.Services.AddDbContext<BankDotnetDbContext>(options =>
 );
 
 builder.Services.AddControllers();
+builder.Services.Configure<KafkaSettings>(
+    builder.Configuration.GetSection("KafkaSettings")
+    );
 // DI Dependency Injection
 builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
 
