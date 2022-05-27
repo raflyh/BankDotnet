@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "BillProcessor": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}
