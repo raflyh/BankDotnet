@@ -6,8 +6,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using Microsoft.EntityFrameworkCore;
-
-
+using Database.Models;
+using BillProcessor.Settings;
 
 Console.WriteLine("Bill Procesor App");
 
@@ -22,7 +22,7 @@ var config = new ConsumerConfig
     AutoOffsetReset = AutoOffsetReset.Earliest
 };
 
-var topic = "";
+var topic = "simpleOrder";
 CancellationTokenSource cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
 {
@@ -42,6 +42,20 @@ using (var consumer = new ConsumerBuilder<string, string>(config).Build())
             Console.WriteLine($"Consumed record with key: {cr.Message.Key} and value: {cr.Message.Value}");
 
             // EF
+            ReceiveKafkaBill receiveBill = JsonConvert.DeserializeObject<ReceiveKafkaBill>(cr.Message.Value);
+            using (var context = new BankDbContext())
+            {
+                double total = Convert.ToDouble(receiveBill.Bills);
+                var bill = new Bill
+                {
+                    BillTransactionId = receiveBill.TransactionId,
+                    VirtualAccount = receiveBill.Virtualaccount,
+                    TotalBill = total,
+                    PaymentStatus = "Accepted"
+                };
+                context.Bills.Add(bill);
+                context.SaveChanges();
+            }
             
         }
     }

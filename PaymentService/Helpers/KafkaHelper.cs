@@ -27,16 +27,21 @@ namespace PaymentService.Helpers
             var billId = 0;
             using (var consumer = new ConsumerBuilder<string, string>(Serverconfig).Build())
             {
-                var topics = new string[] { "BankTravika", "BankSolaka" };
+                /* string[] topics = { "BankTravika", "BankSolaka" , "simpleOrder" };
+                 foreach(string topic in topics)
+                 {
+                     consumer.Subscribe(topic);
+                 }*/
+                consumer.Subscribe("simpleOrder");
                 Console.WriteLine("==============Accepting Bills================");
-                consumer.Subscribe(topics);
+                
                 try
                 {
                     while (true)
                     {
                         var cr = consumer.Consume(cts.Token);
                         Console.WriteLine($"Consumed record with key: {cr.Message.Key} and value: {cr.Message.Value}");
-                        if (cr.Topic == "BankTravika")
+                        if (cr.Topic == "simpleOrder")
                         {
                             ReceiveBill receiveBill = JsonConvert.DeserializeObject<ReceiveBill>(cr.Message.Value);
                             var bill = new Bill

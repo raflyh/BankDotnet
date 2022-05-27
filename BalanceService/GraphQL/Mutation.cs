@@ -206,7 +206,7 @@ namespace BalanceService.GraphQL
             var dts = DateTime.Now.ToString();
             var key = "RedeemCode-" + dts;
             var val = JObject.FromObject(input).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
-            var result = await KafkaHelper.SendMessage(settings.Value, "simpleOrder", key, val);
+            var result = await KafkaHelper.SendMessage(settings.Value, "RedeemCode", key, val);
             
             TopupOutput resp = new TopupOutput
             {
@@ -238,24 +238,17 @@ namespace BalanceService.GraphQL
             BillPayment input,
             [Service] BankDotnetDbContext context, ClaimsPrincipal claimsPrincipal, [Service] IOptions<KafkaSettings> settings)
         {
+           
             var userName = claimsPrincipal.Identity.Name;
             var opo = context.Users.Where(o => o.Username.Contains("OPO")).FirstOrDefault();
             var customer = context.Users.Where(o => o.Username == userName).FirstOrDefault();
             var customerBalance = context.Balances.Where(o => o.UserId == customer.Id).OrderBy(o => o.Id).LastOrDefault();
             var customerCredit = context.Credits.Where(o => o.UserId == customer.Id).OrderBy(o => o.Id).LastOrDefault();
             var opoBalance = context.Balances.Where(o => o.UserId == opo.Id).FirstOrDefault();
-            
-            var bill = context.Bills.Where(o => o.PaymentStatus != "Paid" && o.Type == "Pembayaran OPO").FirstOrDefault();//Sample
-            if (bill == null)
-            {
-                return new TransactionOutput
-                {
-                    Message = "Pembayaran Gagal",
-                    Status = false,
-                    TransactionDate = DateTime.Now.ToString(),
-                };
-            }
-            if (bill.VirtualAccount == input.VirtualAccount)
+
+            var bill = context.Bills.Where(o => o.PaymentStatus != "Paid" && o.VirtualAccount == input.VirtualAccount).FirstOrDefault();//Sample
+
+            if (bill != null)
             {
                 if (customerBalance.TotalBalance >= bill.TotalBill)
                 {
@@ -292,7 +285,7 @@ namespace BalanceService.GraphQL
                     };
                     //send kafka
                     var dts = DateTime.Now.ToString();
-                    var key = "RedeemCode-" + dts;
+                    var key = "TopupOpo-" + dts;
                     var val = JObject.FromObject(recive).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
                     var result = await KafkaHelper.SendMessage(settings.Value, "simpleOrder", key, val);
 
@@ -305,7 +298,7 @@ namespace BalanceService.GraphQL
                 }
                 return new TransactionOutput
                 {
-                    Message = "Pembayaran Gagal",
+                    Message = "Saldo Tidak Cukup",
                     Status = false,
                     TransactionDate = DateTime.Now.ToString(),
                 };
@@ -313,7 +306,7 @@ namespace BalanceService.GraphQL
             }
             return new TransactionOutput
             {
-                Message = "Pembayaran Gagal",
+                Message = "Virtual Account Tidak Ditemukan",
                 Status = false,
                 TransactionDate = DateTime.Now.ToString(),
             };

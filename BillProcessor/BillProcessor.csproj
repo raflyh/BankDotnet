@@ -38,4 +38,8 @@
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.15.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Database\Database.csproj" />
+	</ItemGroup>
 </Project>
