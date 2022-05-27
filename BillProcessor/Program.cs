@@ -22,7 +22,7 @@ var config = new ConsumerConfig
     AutoOffsetReset = AutoOffsetReset.Earliest
 };
 
-var topic = "simpleOrder";
+var topic = "Bank";
 CancellationTokenSource cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
 {
