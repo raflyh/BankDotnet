@@ -1,0 +1,150 @@
+version: '3.4'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - 1433:1433
+    volumes:
+      - ~/apps/mssql/data:/var/lib/mssqlql/data
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Str0ng@Passw0rd
+
+  zookeeper:
+    image: docker.io/bitnami/zookeeper
+    ports:
+      - "2181:2181"
+    volumes:
+      - "./zookeeper_data:/bitnami"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - app-tier
+
+  kafka:
+    image: docker.io/bitnami/kafka
+    ports:
+      - "9092:9092"
+    links:
+      - "zookeeper"
+    volumes:
+      - "./kafka_data:/bitnami"
+    environment:      
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+    networks:
+      - app-tier
+
+  userservice:
+    image: ${DOCKER_REGISTRY-}userservice
+    ports:
+     - "6000:443"
+     - "4000:80"
+    extra_hosts:
+     - "host.docker.internal:host-gateway"
+    volumes:
+     - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+     - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    build:
+      context: .
+      dockerfile: UserService/Dockerfile
+    depends_on:
+     - mssql
+    networks:
+     - app-tier
+
+  balanceservice:
+    image: ${DOCKER_REGISTRY-}balanceservice
+    ports:
+     - "6001:443"
+     - "4001:80"
+    extra_hosts:
+     - "host.docker.internal:host-gateway"
+    volumes:
+     - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+     - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    build:
+      context: .
+      dockerfile: BalanceService/Dockerfile
+    depends_on:
+     - mssql
+    networks:
+     - app-tier
+
+  creditservice:
+    image: ${DOCKER_REGISTRY-}creditservice
+    ports:
+     - "6002:443"
+     - "4002:80"
+    extra_hosts:
+     - "host.docker.internal:host-gateway"
+    volumes:
+     - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+     - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    build:
+      context: .
+      dockerfile: CreditService/Dockerfile
+    depends_on:
+     - mssql
+    networks:
+     - app-tier
+
+  paymentservice:
+    image: ${DOCKER_REGISTRY-}paymentservice
+    ports:
+     - "6003:443"
+     - "4003:80"
+    extra_hosts:
+     - "host.docker.internal:host-gateway"
+    volumes:
+     - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+     - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    build:
+      context: .
+      dockerfile: PaymentService/Dockerfile
+    depends_on:
+     - mssql
+    networks:
+     - app-tier
+
+  savingservice:
+    image: ${DOCKER_REGISTRY-}savingservice
+    ports:
+     - "6004:443"
+     - "4004:80"
+    extra_hosts:
+     - "host.docker.internal:host-gateway"
+    volumes:
+     - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+     - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    build:
+      context: .
+      dockerfile: SavingService/Dockerfile
+    depends_on:
+     - mssql
+    networks:
+     - app-tier
+
+  billprocessor:
+    image: ${DOCKER_REGISTRY-}billprocessor
+    build:
+      context: .
+      dockerfile: BillProcessor/Dockerfile
+    depends_on:
+     - mssql
+    networks:
+     - app-tier
+
+networks:
+  app-tier:
+    driver: bridge
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
