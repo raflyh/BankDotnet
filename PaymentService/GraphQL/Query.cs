@@ -14,17 +14,18 @@ namespace PaymentService.GraphQL
 
             var userRole = claimsPrincipal.Claims.Where(o => o.Type == ClaimTypes.Role).FirstOrDefault();
             var user = context.Users.Where(o => o.Username == userName).FirstOrDefault();
-            var userBalance = context.Balances.Where(o => o.UserId == user.Id).FirstOrDefault();
+            var userBalance = context.Balances.Where(o => o.UserId == user.Id).OrderBy(o => o.Id).LastOrDefault();
+            var userCredit = context.Credits.Where(o => o.UserId == user.Id).FirstOrDefault();
             if (user != null)
             {
                 if (userRole != null)
                 {
-                    if (userRole.Value == "MANAGER" || userRole.Value == "CS")
+                    if (userRole.Value == "MANAGER" || userRole.Value == "CUSTOMER SERVICE")
                     {
                         return context.Bills.Include(o => o.Transactions).AsQueryable();
                     }
                 }
-                var bills = context.Bills.Include(o => o.Transactions).Where(o => o.BalanceId == userBalance.Id);
+                var bills = context.Bills.Include(o => o.Transactions).Where(o => o.BalanceId == userBalance.Id || o.CreditId == userCredit.Id);
                 return bills.AsQueryable();
             }
             return new List<Bill>().AsQueryable();
