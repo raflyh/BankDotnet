@@ -188,7 +188,7 @@ namespace BalanceService.GraphQL
         {
             var userName = claimsPrincipal.Identity.Name;
             var user = context.Users.Where(s=>s.Username == userName).FirstOrDefault();
-            var balance = context.Balances.Where(s=>s.UserId == user.Id).FirstOrDefault();
+            var balance = context.Balances.Where(s=>s.UserId == user.Id).OrderBy(o=>o.Id).LastOrDefault();
             //create code generator
             const string src = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             int length = 16;
@@ -206,7 +206,7 @@ namespace BalanceService.GraphQL
             var dts = DateTime.Now.ToString();
             var key = "RedeemCode-" + dts;
             var val = JObject.FromObject(input).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
-            var result = await KafkaHelper.SendMessage(settings.Value, "RedeemCode", key, val);
+            var result = await KafkaHelper.SendMessage(settings.Value, "OPO", key, val);
             
             TopupOutput resp = new TopupOutput
             {
@@ -287,7 +287,7 @@ namespace BalanceService.GraphQL
                     var dts = DateTime.Now.ToString();
                     var key = "TopupOpo-" + dts;
                     var val = JObject.FromObject(recive).ToString(Formatting.None);/*JsonConvert.SerializeObject(input);*/
-                    var result = await KafkaHelper.SendMessage(settings.Value, "simpleOrder", key, val);
+                    var result = await KafkaHelper.SendMessage(settings.Value, "OPO", key, val);
 
                     return new TransactionOutput
                     {

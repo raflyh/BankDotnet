@@ -69,14 +69,14 @@ namespace PaymentService.GraphQL
                         var sendPaymentStatus = new SendPaymentStatus
                         {
                             VirtualAccount = bill.VirtualAccount,
-                            Bills = bill.TotalBill,
+                            Bills = Convert.ToString(bill.TotalBill),
                             PaymentStatus = bill.PaymentStatus,
                             TransactionId = bill.BillTransactionId
                         };
                         var key = "Payment-Status-" + DateTime.Now.ToString();
                         var val = JsonConvert.SerializeObject(sendPaymentStatus);
                         Console.WriteLine("====Sending Payment Status====");
-                        await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                        await KafkaHelper.SendPaymentStatus(settings.Value, "TRAVIKA", key, val);
                         Console.WriteLine("====Payment Status Sent====");
                         return await Task.FromResult(new TransactionStatus
                         (
@@ -127,14 +127,14 @@ namespace PaymentService.GraphQL
                         var sendPaymentStatus = new SendPaymentStatus
                         {
                             VirtualAccount = bill.VirtualAccount,
-                            Bills = bill.TotalBill,
+                            Bills = Convert.ToString(bill.TotalBill),
                             PaymentStatus = bill.PaymentStatus,
                             TransactionId = bill.BillTransactionId
                         };
                         var key = "Payment-Status-" + DateTime.Now.ToString();
                         var val = JsonConvert.SerializeObject(sendPaymentStatus);
                         Console.WriteLine("====Sending Payment Status====");
-                        await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                        await KafkaHelper.SendPaymentStatus(settings.Value, "TRAVIKA", key, val);
                         Console.WriteLine("====Payment Status Sent====");
 
                         return await Task.FromResult(new TransactionStatus
@@ -216,14 +216,14 @@ namespace PaymentService.GraphQL
                         var sendPaymentStatus = new SendPaymentStatus
                         {
                             VirtualAccount = bill.VirtualAccount,
-                            Bills = bill.TotalBill,
+                            Bills = Convert.ToString(bill.TotalBill),
                             PaymentStatus = bill.PaymentStatus,
                             TransactionId = bill.BillTransactionId
                         };
                         var key = "Payment-Status-" + DateTime.Now.ToString();
                         var val = JsonConvert.SerializeObject(sendPaymentStatus);
                         Console.WriteLine("====Sending Payment Status====");
-                        await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                        await KafkaHelper.SendPaymentStatus(settings.Value, "SOLAKA", key, val);
                         Console.WriteLine("====Payment Status Sent====");
                         return await Task.FromResult(new TransactionStatus
                         (
@@ -274,14 +274,14 @@ namespace PaymentService.GraphQL
                         var sendPaymentStatus = new SendPaymentStatus
                         {
                             VirtualAccount = bill.VirtualAccount,
-                            Bills = bill.TotalBill,
+                            Bills = Convert.ToString(bill.TotalBill),
                             PaymentStatus = bill.PaymentStatus,
                             TransactionId = bill.BillTransactionId
                         };
                         var key = "Payment-Status-" + DateTime.Now.ToString();
                         var val = JsonConvert.SerializeObject(sendPaymentStatus);
                         Console.WriteLine("====Sending Payment Status====");
-                        await KafkaHelper.SendPaymentStatus(settings.Value, "BankPaymentStatus", key, val);
+                        await KafkaHelper.SendPaymentStatus(settings.Value, "SOLAKA", key, val);
                         Console.WriteLine("====Payment Status Sent====");
 
                         return await Task.FromResult(new TransactionStatus
