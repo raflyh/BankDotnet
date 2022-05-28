@@ -61,6 +61,7 @@ namespace PaymentService.GraphQL
                         context.Balances.Add(newTravBalance);
                         //Update bill
                         bill.BalanceId = customerBalance.Id;
+                        bill.Type = input.Type;
                         bill.PaymentStatus = "Paid";
                         context.Bills.Update(bill);
                         await context.SaveChangesAsync();
@@ -118,6 +119,7 @@ namespace PaymentService.GraphQL
 
                         //Update bill SQL
                         bill.CreditId = customerCredit.Id;
+                        bill.Type = input.Type;
                         bill.PaymentStatus = "Paid";
                         context.Bills.Update(bill);
                         await context.SaveChangesAsync();
@@ -206,6 +208,7 @@ namespace PaymentService.GraphQL
                         //Update bill SQL
                         bill.VirtualAccount = input.VirtualAccount;
                         bill.BalanceId = customerBalance.Id;
+                        bill.Type = input.Type;
                         bill.PaymentStatus = "Paid";
                         context.Bills.Update(bill);
                         await context.SaveChangesAsync();
@@ -263,6 +266,7 @@ namespace PaymentService.GraphQL
 
                         //Update bill SQL
                         bill.CreditId = customerCredit.Id;
+                        bill.Type = input.Type;
                         bill.PaymentStatus = "Paid";
                         context.Bills.Update(bill);
                         await context.SaveChangesAsync();
@@ -347,8 +351,8 @@ namespace PaymentService.GraphQL
                         };
                         context.Balances.Add(newSolaBalance);
                         //Update bill SQL
-                        bill.VirtualAccount = input.VirtualAccount;
                         bill.BalanceId = customerBalance.Id;
+                        bill.Type = input.Type;
                         bill.PaymentStatus = "Paid";
                         context.Bills.Update(bill);
                         await context.SaveChangesAsync();
@@ -394,6 +398,7 @@ namespace PaymentService.GraphQL
 
                         //Update bill SQL
                         bill.CreditId = customerCredit.Id;
+                        bill.Type = input.Type;
                         bill.PaymentStatus = "Paid";
                         context.Bills.Update(bill);
                         await context.SaveChangesAsync();
@@ -465,6 +470,7 @@ namespace PaymentService.GraphQL
                         context.Balances.Add(newPdamBalance);
                         //Update bill SQL
                         bill.BalanceId = customerBalance.Id;
+                        bill.Type = input.Type;
                         bill.PaymentStatus = "Paid";
                         context.Bills.Update(bill);
                         await context.SaveChangesAsync();
@@ -510,6 +516,7 @@ namespace PaymentService.GraphQL
 
                         //Update bill SQL
                         bill.CreditId = customerCredit.Id;
+                        bill.Type = input.Type;
                         bill.PaymentStatus = "Paid";
                         context.Bills.Update(bill);
                         await context.SaveChangesAsync();
