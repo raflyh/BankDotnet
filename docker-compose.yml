@@ -42,7 +42,6 @@ services:
   userservice:
     image: ${DOCKER_REGISTRY-}userservice
     ports:
-     - "6000:443"
      - "4000:80"
     extra_hosts:
      - "host.docker.internal:host-gateway"
@@ -60,7 +59,6 @@ services:
   balanceservice:
     image: ${DOCKER_REGISTRY-}balanceservice
     ports:
-     - "6001:443"
      - "4001:80"
     extra_hosts:
      - "host.docker.internal:host-gateway"
@@ -78,7 +76,6 @@ services:
   creditservice:
     image: ${DOCKER_REGISTRY-}creditservice
     ports:
-     - "6002:443"
      - "4002:80"
     extra_hosts:
      - "host.docker.internal:host-gateway"
@@ -96,7 +93,6 @@ services:
   paymentservice:
     image: ${DOCKER_REGISTRY-}paymentservice
     ports:
-     - "6003:443"
      - "4003:80"
     extra_hosts:
      - "host.docker.internal:host-gateway"
@@ -114,7 +110,6 @@ services:
   savingservice:
     image: ${DOCKER_REGISTRY-}savingservice
     ports:
-     - "6004:443"
      - "4004:80"
     extra_hosts:
      - "host.docker.internal:host-gateway"

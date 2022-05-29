@@ -275,13 +275,13 @@ namespace BalanceService.GraphQL
                     context.Bills.Update(bill);
                     await context.SaveChangesAsync();
 
-                    var sendBill = context.Bills.Where(s => s.VirtualAccount == input.VirtualAccount).FirstOrDefault();
+                    //var sendBill = context.Bills.Where(s => s.VirtualAccount == input.VirtualAccount).FirstOrDefault();
                     var recive = new SendKafkaBill
                     {
                         Virtualaccount = input.VirtualAccount,
-                        TransactionId = sendBill.BillTransactionId,
-                        Bills = sendBill.TotalBill.ToString(),
-                        PaymentStatus = sendBill.PaymentStatus
+                        TransactionId = bill.BillTransactionId,
+                        Bills = bill.TotalBill.ToString(),
+                        PaymentStatus = bill.PaymentStatus
                     };
                     //send kafka
                     var dts = DateTime.Now.ToString();
